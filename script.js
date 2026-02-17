@@ -261,6 +261,7 @@
   const shapes = [shapeBlob, shapeDNA, shapeHeart, shapePill, shapeMolecule];
   const shapeDuration = 5.0;
   const transitionTime = 1.8;
+  const firstBlobDuration = 1.0; // First blob transitions out after 1s
 
   // --- Mouse interaction ---
   let mouseX = 0;
@@ -300,17 +301,39 @@
 
     // Morph between healthcare/CRO shapes
     const pos = positionAttr.array;
-    const totalCycle = shapes.length * shapeDuration;
-    const cycleT = t % totalCycle;
-    const currentIdx = Math.floor(cycleT / shapeDuration) % shapes.length;
-    const nextIdx = (currentIdx + 1) % shapes.length;
-    const shapeProgress = (cycleT % shapeDuration) / shapeDuration;
+    // First blob is shorter, then normal cycle repeats
+    const firstCycleTotal = firstBlobDuration + (shapes.length - 1) * shapeDuration;
+    const normalCycleTotal = shapes.length * shapeDuration;
+    let currentIdx, nextIdx, curDuration, elapsed;
+    if (t < firstCycleTotal) {
+      // First cycle: blob is short
+      if (t < firstBlobDuration) {
+        currentIdx = 0; nextIdx = 1;
+        curDuration = firstBlobDuration;
+        elapsed = t;
+      } else {
+        const rem = t - firstBlobDuration;
+        currentIdx = 1 + Math.floor(rem / shapeDuration);
+        if (currentIdx >= shapes.length) currentIdx = shapes.length - 1;
+        nextIdx = (currentIdx + 1) % shapes.length;
+        curDuration = shapeDuration;
+        elapsed = rem % shapeDuration;
+      }
+    } else {
+      // Subsequent cycles: all normal duration
+      const rem = (t - firstCycleTotal) % normalCycleTotal;
+      currentIdx = Math.floor(rem / shapeDuration) % shapes.length;
+      nextIdx = (currentIdx + 1) % shapes.length;
+      curDuration = shapeDuration;
+      elapsed = rem % shapeDuration;
+    }
+    const shapeProgress = elapsed / curDuration;
 
     // Smooth easing for transition
     let blend = 0;
-    const holdTime = shapeDuration - transitionTime;
-    if (shapeProgress * shapeDuration > holdTime) {
-      const tNorm = (shapeProgress * shapeDuration - holdTime) / transitionTime;
+    const holdTime = curDuration - transitionTime;
+    if (elapsed > holdTime) {
+      const tNorm = (elapsed - holdTime) / transitionTime;
       blend = tNorm * tNorm * (3 - 2 * tNorm); // smoothstep
     }
 
@@ -345,7 +368,7 @@
       // Snap smoothRotY toward nearest multiple of 2PI (front-facing)
       const twoPi = Math.PI * 2;
       const nearest = Math.round(smoothRotY / twoPi) * twoPi;
-      smoothRotY += (nearest - smoothRotY) * 0.05;
+      smoothRotY += (nearest - smoothRotY) * 0.15;
     } else {
       smoothRotY += 0.15 * dt;
     }
