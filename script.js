@@ -831,20 +831,19 @@
 // 3D DNA Double Helix
 // ============================
 (function initDNAHelix() {
-  const canvas = document.getElementById('dna-canvas');
+  const canvas = document.getElementById('hero-dna');
   if (!canvas) return;
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x0a0a0a, 1);
+  renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x0a0a0a, 0.06);
 
   const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-  camera.position.set(0, 0, 16);
+  camera.position.set(0, 0, 14);
 
   // Lighting
   const ambientLight = new THREE.AmbientLight(0x4455cc, 0.3);
@@ -988,7 +987,7 @@
     const t = clock.getElapsedTime();
 
     dnaGroup.rotation.y = t * 0.3;
-    dnaGroup.rotation.x = 0.15;
+    dnaGroup.rotation.x = Math.PI / 6; // 30 degree tilt
 
     renderer.render(scene, camera);
   }

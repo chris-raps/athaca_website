@@ -304,7 +304,7 @@ body {
   align-items: center;
 }
 
-#blob-canvas {
+#hero-dna {
   width: 100%;
   max-width: 520px;
   height: 480px;
@@ -1170,7 +1170,7 @@ body {
     justify-content: center;
   }
 
-  #blob-canvas {
+  #hero-dna {
     max-width: 400px;
     height: 380px;
     margin: 0 auto;
@@ -1276,7 +1276,7 @@ body {
     justify-content: center;
   }
 
-  #blob-canvas {
+  #hero-dna {
     max-width: 100%;
     height: 300px;
   }
