@@ -407,9 +407,9 @@
   function setupScene(canvasId, camZ) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return null;
-    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x1a1a2e, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     var scene = new THREE.Scene();
@@ -492,7 +492,7 @@
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     var mat = new THREE.PointsMaterial({
-      size: 0.055,
+      size: 0.08,
       map: glowTex,
       transparent: true,
       opacity: 0.85,
