@@ -195,13 +195,13 @@
   // 3: Water molecule (H2O) — ball-and-stick model
   function shapeMolecule(nx, ny, nz, t) {
     const angle = 104.5 * Math.PI / 180;
-    const bondLen = 1.1;
-    const oCenter = [0.0, -0.15, 0.0];
-    const h1 = [-Math.sin(angle / 2) * bondLen, -0.15 + Math.cos(angle / 2) * bondLen, 0.0];
-    const h2 = [ Math.sin(angle / 2) * bondLen, -0.15 + Math.cos(angle / 2) * bondLen, 0.0];
-    const atomRadii = [0.55, 0.38, 0.38]; // O bigger, H smaller
+    const bondLen = 1.3;
+    const oCenter = [0.0, -0.25, 0.0];
+    const h1 = [-Math.sin(angle / 2) * bondLen, -0.25 + Math.cos(angle / 2) * bondLen, 0.0];
+    const h2 = [ Math.sin(angle / 2) * bondLen, -0.25 + Math.cos(angle / 2) * bondLen, 0.0];
+    const atomRadii = [0.6, 0.45, 0.45]; // O bigger, H clearly visible
     const centers = [oCenter, h1, h2];
-    const stickR = 0.12;
+    const stickR = 0.14;
 
     // Ray-march: find where the ray from origin along (nx,ny,nz) hits any atom sphere or bond cylinder
     let bestR = R * 0.02; // baseline tiny sphere
