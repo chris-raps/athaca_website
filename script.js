@@ -339,10 +339,16 @@
     positionAttr.needsUpdate = true;
     geometry.computeVertexNormals();
 
-    // Pause Y rotation when heart is showing so it faces the camera
+    // Steer rotation to face camera when heart is showing
     const heartShowing = currentIdx === 2 || (nextIdx === 2 && blend > 0.3);
-    const rotSpeed = heartShowing ? -0.04 : 0.15;
-    smoothRotY += rotSpeed * dt;
+    if (heartShowing) {
+      // Snap smoothRotY toward nearest multiple of 2PI (front-facing)
+      const twoPi = Math.PI * 2;
+      const nearest = Math.round(smoothRotY / twoPi) * twoPi;
+      smoothRotY += (nearest - smoothRotY) * 0.05;
+    } else {
+      smoothRotY += 0.15 * dt;
+    }
     blob.rotation.y = smoothRotY + mouseX * 0.4;
     blob.rotation.x = (heartShowing ? 0 : Math.sin(t * 0.2) * 0.1) + mouseY * 0.2;
     blob.rotation.z = heartShowing ? 0 : Math.sin(t * 0.15) * 0.03;
