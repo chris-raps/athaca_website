@@ -1164,3 +1164,220 @@
     animate();
   })();
 })();
+
+// ============================
+// Engage Step Card Visuals
+// ============================
+(function initEngageVisuals() {
+  function setupEngage(canvasId, camZ) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, premultipliedAlpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+    camera.position.set(0, 0, camZ || 5);
+    var l1 = new THREE.DirectionalLight(0x5060e8, 2.0); l1.position.set(3, 3, 5); scene.add(l1);
+    var l2 = new THREE.DirectionalLight(0x4448dd, 1.2); l2.position.set(-3, 2, 3); scene.add(l2);
+    scene.add(new THREE.AmbientLight(0x4455cc, 0.6));
+    function resize() {
+      var w = canvas.clientWidth, h = canvas.clientHeight;
+      if (w === 0 || h === 0) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    var isVis = false;
+    var obs = new IntersectionObserver(function(e) { isVis = e[0].isIntersecting; }, { threshold: 0.1 });
+    obs.observe(canvas);
+    return { renderer: renderer, scene: scene, camera: camera, visible: function() { return isVis; } };
+  }
+
+  // ---- 01: Pulsing Target / Crosshair ----
+  (function() {
+    var s = setupEngage('canvas-engage1', 5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var ringMat = new THREE.LineBasicMaterial({ color: 0x3545b5, transparent: true, opacity: 0.6 });
+    var radii = [1.0, 0.65, 0.3];
+    var rings = [];
+    radii.forEach(function(r) {
+      var pts = [];
+      for (var j = 0; j <= 64; j++) {
+        var a = (j / 64) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0));
+      }
+      var ring = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), ringMat);
+      group.add(ring);
+      rings.push({ mesh: ring, baseR: r });
+    });
+
+    var dotMat = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+    var dot = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 10), dotMat);
+    group.add(dot);
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      rings.forEach(function(r, i) {
+        var sc = 1 + Math.sin(t * 1.5 + i * 1.0) * 0.1;
+        r.mesh.scale.set(sc, sc, 1);
+      });
+      dot.scale.setScalar(1 + Math.sin(t * 2) * 0.2);
+      group.rotation.z = Math.sin(t * 0.3) * 0.15;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+
+  // ---- 02: Interlocking Gears ----
+  (function() {
+    var s = setupEngage('canvas-engage2', 5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    function makeGear(teeth, innerR, outerR) {
+      var pts = [];
+      for (var i = 0; i <= teeth * 2; i++) {
+        var a = (i / (teeth * 2)) * Math.PI * 2;
+        var r = i % 2 === 0 ? outerR : innerR;
+        pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0));
+      }
+      pts.push(pts[0].clone());
+      return new THREE.BufferGeometry().setFromPoints(pts);
+    }
+
+    var gearMat1 = new THREE.LineBasicMaterial({ color: 0x3545b5, transparent: true, opacity: 0.7 });
+    var gearMat2 = new THREE.LineBasicMaterial({ color: 0x4560dd, transparent: true, opacity: 0.7 });
+
+    var gear1 = new THREE.Line(makeGear(10, 0.7, 0.9), gearMat1);
+    gear1.position.set(-0.55, 0.2, 0);
+    group.add(gear1);
+
+    var gear2 = new THREE.Line(makeGear(8, 0.5, 0.65), gearMat2);
+    gear2.position.set(0.55, -0.15, 0);
+    group.add(gear2);
+
+    var hubMat = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+    var hub1 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), hubMat);
+    hub1.position.set(-0.55, 0.2, 0);
+    group.add(hub1);
+    var hub2 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), hubMat);
+    hub2.position.set(0.55, -0.15, 0);
+    group.add(hub2);
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      gear1.rotation.z = t * 0.4;
+      gear2.rotation.z = -t * 0.5;
+      group.rotation.y = Math.sin(t * 0.15) * 0.2;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+
+  // ---- 03: Assembling Layers ----
+  (function() {
+    var s = setupEngage('canvas-engage3', 5.5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var layerMats = [
+      new THREE.MeshPhysicalMaterial({ color: 0x5565e5, metalness: 0.3, roughness: 0.15, clearcoat: 0.8, transparent: true, opacity: 0.6 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x4555d5, metalness: 0.3, roughness: 0.15, clearcoat: 0.8, transparent: true, opacity: 0.65 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x3545c5, metalness: 0.3, roughness: 0.15, clearcoat: 0.8, transparent: true, opacity: 0.7 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x3040b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0, transparent: true, opacity: 0.8 }),
+    ];
+    var edgeMat = new THREE.LineBasicMaterial({ color: 0x3545b5, transparent: true, opacity: 0.5 });
+
+    var layers = [];
+    for (var i = 0; i < 4; i++) {
+      var geo = new THREE.BoxGeometry(1.2, 0.15, 0.8);
+      var mesh = new THREE.Mesh(geo, layerMats[i]);
+      var edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+      var layerGroup = new THREE.Group();
+      layerGroup.add(mesh);
+      layerGroup.add(edges);
+      layerGroup.position.y = (i - 1.5) * 0.35;
+      group.add(layerGroup);
+      layers.push({ group: layerGroup, baseY: (i - 1.5) * 0.35 });
+    }
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      layers.forEach(function(l, i) {
+        var spread = Math.sin(t * 0.8) * 0.12;
+        l.group.position.y = l.baseY + (i - 1.5) * spread;
+      });
+      group.rotation.y = t * 0.15;
+      group.rotation.x = 0.3;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+
+  // ---- 04: Two Orbits Linking ----
+  (function() {
+    var s = setupEngage('canvas-engage4', 5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var orbMat = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+    var orbA = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), orbMat);
+    var orbB = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), new THREE.MeshPhysicalMaterial({ color: 0x4560dd, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 }));
+    group.add(orbA);
+    group.add(orbB);
+
+    var linkMat = new THREE.LineBasicMaterial({ color: 0x4055cc, transparent: true, opacity: 0.5 });
+    var linkGeo = new THREE.BufferGeometry();
+    var linkPositions = new Float32Array(6);
+    linkGeo.setAttribute('position', new THREE.BufferAttribute(linkPositions, 3));
+    var link = new THREE.Line(linkGeo, linkMat);
+    group.add(link);
+
+    var trailMatA = new THREE.LineBasicMaterial({ color: 0x3545b5, transparent: true, opacity: 0.3 });
+    var trailMatB = new THREE.LineBasicMaterial({ color: 0x4560dd, transparent: true, opacity: 0.3 });
+    var trailPtsA = [], trailPtsB = [];
+    for (var i = 0; i <= 64; i++) {
+      var a = (i / 64) * Math.PI * 2;
+      trailPtsA.push(new THREE.Vector3(Math.cos(a) * 0.9 - 0.35, Math.sin(a) * 0.9, 0));
+      trailPtsB.push(new THREE.Vector3(Math.cos(a) * 0.9 + 0.35, Math.sin(a) * 0.9, 0));
+    }
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(trailPtsA), trailMatA));
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(trailPtsB), trailMatB));
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      var aA = t * 0.7;
+      var aB = t * 0.7 + Math.PI;
+      orbA.position.set(Math.cos(aA) * 0.9 - 0.35, Math.sin(aA) * 0.9, 0);
+      orbB.position.set(Math.cos(aB) * 0.9 + 0.35, Math.sin(aB) * 0.9, 0);
+      var lArr = linkGeo.attributes.position.array;
+      lArr[0] = orbA.position.x; lArr[1] = orbA.position.y; lArr[2] = 0;
+      lArr[3] = orbB.position.x; lArr[4] = orbB.position.y; lArr[5] = 0;
+      linkGeo.attributes.position.needsUpdate = true;
+      group.rotation.y = Math.sin(t * 0.2) * 0.25;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+})();

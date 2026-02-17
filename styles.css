@@ -636,6 +636,14 @@ body {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+.engage-canvas {
+  width: 80px;
+  height: 80px;
+  display: block;
+  margin-bottom: 16px;
+  background: transparent !important;
+}
+
 .engage-step:hover {
   transform: translateY(-4px);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.06);
