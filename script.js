@@ -407,9 +407,10 @@
   function setupScene(canvasId, camZ) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return null;
-    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, premultipliedAlpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
+    renderer.autoClear = true;
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
     camera.position.set(0, 0, camZ || 5);
