@@ -827,4 +827,173 @@
   animate();
 })();
 
+// ============================
+// 3D DNA Double Helix
+// ============================
+(function initDNAHelix() {
+  const canvas = document.getElementById('dna-canvas');
+  if (!canvas) return;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0a0a0a, 1);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0a0a0a, 0.06);
+
+  const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+  camera.position.set(0, 0, 16);
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0x4455cc, 0.3);
+  scene.add(ambientLight);
+
+  const mainLight = new THREE.DirectionalLight(0x5060e8, 2.5);
+  mainLight.position.set(5, 8, 5);
+  scene.add(mainLight);
+
+  const fillLight = new THREE.DirectionalLight(0x4448dd, 1.5);
+  fillLight.position.set(-5, -3, 3);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight(0x7788ff, 1.2);
+  rimLight.position.set(0, 5, -8);
+  scene.add(rimLight);
+
+  // Materials
+  const backboneMat = new THREE.MeshPhysicalMaterial({
+    color: 0x4050dd,
+    metalness: 0.4,
+    roughness: 0.15,
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.1,
+  });
+
+  const basePairMat = new THREE.MeshPhysicalMaterial({
+    color: 0x6070ee,
+    metalness: 0.3,
+    roughness: 0.2,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.15,
+  });
+
+  const nodeMat = new THREE.MeshPhysicalMaterial({
+    color: 0x5565e5,
+    metalness: 0.5,
+    roughness: 0.1,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+  });
+
+  // Geometry templates
+  const sphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
+  const smallSphereGeo = new THREE.SphereGeometry(0.18, 12, 12);
+
+  // DNA group
+  const dnaGroup = new THREE.Group();
+  scene.add(dnaGroup);
+
+  // Build the double helix
+  const turns = 4;
+  const pointsPerTurn = 20;
+  const totalPoints = turns * pointsPerTurn;
+  const helixRadius = 1.8;
+  const helixHeight = 24;
+  const yStart = -helixHeight / 2;
+
+  // Function to create a cylinder between two points
+  function createCylinder(p1, p2, radius, material) {
+    const dir = new THREE.Vector3().subVectors(p2, p1);
+    const len = dir.length();
+    const geo = new THREE.CylinderGeometry(radius, radius, len, 8, 1);
+    geo.translate(0, len / 2, 0);
+    geo.rotateX(Math.PI / 2);
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.position.copy(p1);
+    mesh.lookAt(p2);
+    return mesh;
+  }
+
+  const strand1Points = [];
+  const strand2Points = [];
+
+  for (let i = 0; i <= totalPoints; i++) {
+    const t = i / totalPoints;
+    const angle = t * turns * Math.PI * 2;
+    const y = yStart + t * helixHeight;
+
+    // Strand 1
+    const x1 = Math.cos(angle) * helixRadius;
+    const z1 = Math.sin(angle) * helixRadius;
+    strand1Points.push(new THREE.Vector3(x1, y, z1));
+
+    // Strand 2 (offset by PI)
+    const x2 = Math.cos(angle + Math.PI) * helixRadius;
+    const z2 = Math.sin(angle + Math.PI) * helixRadius;
+    strand2Points.push(new THREE.Vector3(x2, y, z2));
+
+    // Node spheres on backbone
+    const node1 = new THREE.Mesh(sphereGeo, nodeMat);
+    node1.position.set(x1, y, z1);
+    dnaGroup.add(node1);
+
+    const node2 = new THREE.Mesh(sphereGeo, nodeMat);
+    node2.position.set(x2, y, z2);
+    dnaGroup.add(node2);
+
+    // Base pair rungs (every 2 points)
+    if (i % 2 === 0 && i < totalPoints) {
+      const p1 = new THREE.Vector3(x1, y, z1);
+      const p2 = new THREE.Vector3(x2, y, z2);
+      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+
+      // Two half-rungs with a small sphere in the middle
+      const rung1 = createCylinder(p1, mid, 0.06, basePairMat);
+      const rung2 = createCylinder(mid, p2, 0.06, basePairMat);
+      dnaGroup.add(rung1);
+      dnaGroup.add(rung2);
+
+      const midNode = new THREE.Mesh(smallSphereGeo, basePairMat);
+      midNode.position.copy(mid);
+      dnaGroup.add(midNode);
+    }
+  }
+
+  // Backbone cylinders connecting nodes
+  for (let i = 0; i < strand1Points.length - 1; i++) {
+    const seg1 = createCylinder(strand1Points[i], strand1Points[i + 1], 0.08, backboneMat);
+    const seg2 = createCylinder(strand2Points[i], strand2Points[i + 1], 0.08, backboneMat);
+    dnaGroup.add(seg1);
+    dnaGroup.add(seg2);
+  }
+
+  // Resize
+  function resize() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Animation
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    dnaGroup.rotation.y = t * 0.3;
+    dnaGroup.rotation.x = 0.15;
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+})();
+
 // (Scroll animations, nav effect, and anchor scrolling are at the top of this file)

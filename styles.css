@@ -673,6 +673,42 @@ body {
 }
 
 /* ============================
+   3D DNA Helix Section
+   ============================ */
+.dna-section {
+  position: relative;
+  background: #0a0a0a;
+  height: 600px;
+  overflow: hidden;
+}
+
+#dna-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.dna-overlay {
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.dna-title {
+  font-family: var(--font-heading);
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 700;
+  color: #FFFFFF;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.3;
+}
+
+/* ============================
    Earth Globe Section (video)
    ============================ */
 .earth-section {
