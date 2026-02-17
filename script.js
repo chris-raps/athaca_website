@@ -511,12 +511,12 @@
       var arr = geo.attributes.position.array;
       for (var i = 0; i < count; i++) {
         var i3 = i * 3;
-        arr[i3] = basePos[i3] + Math.sin(t * 0.4 + i * 0.7) * 0.02;
-        arr[i3+1] = basePos[i3+1] + Math.cos(t * 0.5 + i * 0.5) * 0.015;
-        arr[i3+2] = basePos[i3+2] + Math.sin(t * 0.35 + i * 0.3) * 0.02;
+        arr[i3] = basePos[i3] + Math.sin(t * 1.2 + i * 0.7) * 0.06;
+        arr[i3+1] = basePos[i3+1] + Math.cos(t * 1.0 + i * 0.5) * 0.04;
+        arr[i3+2] = basePos[i3+2] + Math.sin(t * 0.8 + i * 0.3) * 0.06;
       }
       geo.attributes.position.needsUpdate = true;
-      pts.rotation.y = Math.sin(t * 0.15) * 0.4;
+      pts.rotation.y = Math.sin(t * 0.3) * 0.6;
       s.renderer.render(s.scene, s.camera);
     }
     animate();
@@ -794,4 +794,193 @@
     renderer.render(scene, camera);
   }
   animate();
+})();
+
+// ============================
+// Research Track Card Visuals
+// ============================
+(function initTrackVisuals() {
+  function setupTrack(canvasId, camZ) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, premultipliedAlpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+    camera.position.set(0, 0, camZ || 5);
+    scene.add(new THREE.DirectionalLight(0x5060e8, 2.0).position.set(3, 3, 5) && scene.children[scene.children.length - 1] || new THREE.Object3D());
+    var l1 = new THREE.DirectionalLight(0x5060e8, 2.0); l1.position.set(3, 3, 5); scene.add(l1);
+    var l2 = new THREE.DirectionalLight(0x4448dd, 1.2); l2.position.set(-3, 2, 3); scene.add(l2);
+    scene.add(new THREE.AmbientLight(0x4455cc, 0.6));
+    function resize() {
+      var w = canvas.clientWidth, h = canvas.clientHeight;
+      if (w === 0 || h === 0) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    var isVis = false;
+    var obs = new IntersectionObserver(function(e) { isVis = e[0].isIntersecting; }, { threshold: 0.1 });
+    obs.observe(canvas);
+    return { renderer: renderer, scene: scene, camera: camera, visible: function() { return isVis; } };
+  }
+
+  // ---- Semantic Track: Knowledge Graph ----
+  (function() {
+    var s = setupTrack('canvas-semantic', 6);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var nodeMat = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+    var nodePositions = [
+      [-1.2, 0.6, 0], [1.0, 0.8, 0.3], [-0.5, -0.5, 0.4], [1.3, -0.4, -0.2],
+      [0, 0.2, -0.5], [-1.0, -0.8, -0.3], [0.5, -0.9, 0.5], [1.5, 0.2, 0.5],
+      [-0.3, 1.0, 0.3], [0.8, 0.0, -0.6],
+    ];
+    var nodes = [];
+    nodePositions.forEach(function(p) {
+      var size = 0.08 + Math.random() * 0.08;
+      var mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 10, 10), nodeMat);
+      mesh.position.set(p[0], p[1], p[2]);
+      group.add(mesh);
+      nodes.push(mesh);
+    });
+
+    var edgeMat = new THREE.LineBasicMaterial({ color: 0x4055cc, transparent: true, opacity: 0.5 });
+    var edges = [[0,1],[0,4],[1,3],[1,7],[2,5],[2,6],[3,7],[4,8],[4,9],[5,6],[8,0],[9,3],[6,3],[2,4]];
+    edges.forEach(function(e) {
+      var geo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(nodePositions[e[0]][0], nodePositions[e[0]][1], nodePositions[e[0]][2]),
+        new THREE.Vector3(nodePositions[e[1]][0], nodePositions[e[1]][1], nodePositions[e[1]][2]),
+      ]);
+      group.add(new THREE.LineSegments(geo, edgeMat));
+    });
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      nodes.forEach(function(n, i) {
+        n.position.y = nodePositions[i][1] + Math.sin(t * 0.8 + i * 1.1) * 0.08;
+        n.position.x = nodePositions[i][0] + Math.cos(t * 0.6 + i * 0.9) * 0.05;
+      });
+      group.rotation.y = t * 0.15;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+
+  // ---- Dynamic Track: 3D Signal Waveform ----
+  (function() {
+    var s = setupTrack('canvas-dynamic', 5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var segCount = 80;
+    var positions = new Float32Array(segCount * 3);
+    var colors = new Float32Array(segCount * 3);
+    for (var i = 0; i < segCount; i++) {
+      var x = (i / segCount - 0.5) * 4;
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = 0;
+      positions[i * 3 + 2] = 0;
+      var ht = i / segCount;
+      colors[i * 3] = 0.2 + ht * 0.15;
+      colors[i * 3 + 1] = 0.25 + ht * 0.15;
+      colors[i * 3 + 2] = 0.55 + ht * 0.3;
+    }
+    var lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    lineGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    var lineMat = new THREE.LineBasicMaterial({ vertexColors: true, linewidth: 2 });
+    var line = new THREE.Line(lineGeo, lineMat);
+    group.add(line);
+
+    var dotGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    var dotMat = new THREE.MeshPhysicalMaterial({ color: 0x3050cc, emissive: 0x2030aa, emissiveIntensity: 0.4, clearcoat: 1.0 });
+    var dot = new THREE.Mesh(dotGeo, dotMat);
+    group.add(dot);
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      var arr = lineGeo.attributes.position.array;
+      for (var i = 0; i < segCount; i++) {
+        var x = (i / segCount - 0.5) * 4;
+        var wave = Math.sin(x * 3 - t * 2.5) * 0.4 * Math.exp(-Math.pow(x - Math.sin(t * 0.5) * 1.5, 2) * 0.3);
+        wave += Math.sin(x * 5 - t * 4) * 0.15;
+        arr[i * 3 + 1] = wave;
+      }
+      lineGeo.attributes.position.needsUpdate = true;
+      var dotIdx = Math.floor(((Math.sin(t * 0.5) + 1) / 2) * (segCount - 1));
+      dot.position.set(arr[dotIdx * 3], arr[dotIdx * 3 + 1], 0);
+      dot.scale.setScalar(1 + Math.sin(t * 3) * 0.3);
+      group.rotation.y = Math.sin(t * 0.2) * 0.3;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+
+  // ---- Merged Attention: Two Streams Converging ----
+  (function() {
+    var s = setupTrack('canvas-merged', 5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var count = 60;
+    var sphereGeo = new THREE.SphereGeometry(0.045, 6, 6);
+    var matA = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+    var matB = new THREE.MeshPhysicalMaterial({ color: 0x5565e5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+    var matMerged = new THREE.MeshPhysicalMaterial({ color: 0x4050dd, emissive: 0x2030aa, emissiveIntensity: 0.3, clearcoat: 1.0 });
+
+    var particles = [];
+    for (var i = 0; i < count; i++) {
+      var stream = i < count / 2 ? 0 : 1;
+      var mesh = new THREE.Mesh(sphereGeo, stream === 0 ? matA : matB);
+      var progress = Math.random();
+      particles.push({ mesh: mesh, stream: stream, progress: progress, speed: 0.15 + Math.random() * 0.1 });
+      group.add(mesh);
+    }
+
+    var mergePoint = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), matMerged);
+    mergePoint.position.set(1.2, 0, 0);
+    group.add(mergePoint);
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      particles.forEach(function(p) {
+        p.progress = (p.progress + p.speed * 0.01) % 1;
+        var pr = p.progress;
+        var startY = p.stream === 0 ? 0.8 : -0.8;
+        var x = -1.5 + pr * 2.7;
+        var yTarget = 0;
+        var blend = Math.pow(Math.max(0, pr - 0.3) / 0.7, 2);
+        var y = startY * (1 - blend) + yTarget * blend;
+        y += Math.sin(t * 1.5 + p.progress * 6) * 0.08 * (1 - blend);
+        var z = Math.sin(pr * Math.PI) * 0.3 * (p.stream === 0 ? 1 : -1);
+        p.mesh.position.set(x, y, z);
+        if (pr > 0.85) {
+          p.mesh.material = matMerged;
+        } else {
+          p.mesh.material = p.stream === 0 ? matA : matB;
+        }
+      });
+      mergePoint.scale.setScalar(1 + Math.sin(t * 2) * 0.15);
+      group.rotation.y = Math.sin(t * 0.2) * 0.25;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
 })();

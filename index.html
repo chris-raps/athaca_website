@@ -109,23 +109,17 @@
         </div>
         <div class="research-tracks fade-up">
           <div class="track-card">
-            <div class="track-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            </div>
+            <canvas class="track-canvas" id="canvas-semantic"></canvas>
             <h4 class="track-title">Semantic Track</h4>
             <p class="track-desc">Interprets clinical notes, lab results, and medical reasoning with structured knowledge representation.</p>
           </div>
           <div class="track-card">
-            <div class="track-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            </div>
+            <canvas class="track-canvas" id="canvas-dynamic"></canvas>
             <h4 class="track-title">Dynamic Track</h4>
             <p class="track-desc">Models physiological signals and temporal patient evolution using state-space architectures.</p>
           </div>
           <div class="track-card">
-            <div class="track-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-            </div>
+            <canvas class="track-canvas" id="canvas-merged"></canvas>
             <h4 class="track-title">Merged Attention</h4>
             <p class="track-desc">Fuses both tracks to ensure clinical consistency across all synthetic patient outputs.</p>
           </div>
