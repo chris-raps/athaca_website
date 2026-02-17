@@ -261,7 +261,7 @@
   const shapes = [shapeBlob, shapeDNA, shapeHeart, shapePill, shapeMolecule];
   const shapeDuration = 5.0;
   const transitionTime = 1.8;
-  const firstBlobDuration = 1.0; // First blob transitions out after 1s
+  const firstBlobDuration = 0.01; // First blob transitions immediately
 
   // --- Mouse interaction ---
   let mouseX = 0;
