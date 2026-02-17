@@ -172,7 +172,7 @@
     const theta = Math.atan2(nz, nx);
     const u = ny;
     const pillR = R * 0.32;
-    const halfL = R * 1.1;
+    const halfL = R * 0.7;
     let along, radius;
     if (u < -0.7) {
       const s = (u + 1) / 0.3;
