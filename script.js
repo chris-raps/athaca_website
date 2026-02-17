@@ -480,9 +480,9 @@
         basePos[idx * 3 + 1] = y;
         basePos[idx * 3 + 2] = z;
         var ht = (y + 0.8) / 3.0;
-        colors[idx * 3] = 0.15 + ht * 0.15;
-        colors[idx * 3 + 1] = 0.18 + ht * 0.18;
-        colors[idx * 3 + 2] = 0.45 + ht * 0.25;
+        colors[idx * 3] = 0.2 + ht * 0.2;
+        colors[idx * 3 + 1] = 0.25 + ht * 0.25;
+        colors[idx * 3 + 2] = 0.55 + ht * 0.35;
         idx++;
       }
     }
