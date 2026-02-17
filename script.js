@@ -395,10 +395,10 @@
   glowCanvas.height = 64;
   var gctx = glowCanvas.getContext('2d');
   var grad = gctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-  grad.addColorStop(0.15, 'rgba(140, 160, 255, 0.9)');
-  grad.addColorStop(0.5, 'rgba(80, 100, 230, 0.4)');
-  grad.addColorStop(1, 'rgba(60, 60, 200, 0)');
+  grad.addColorStop(0, 'rgba(60, 70, 180, 1)');
+  grad.addColorStop(0.2, 'rgba(50, 65, 170, 0.85)');
+  grad.addColorStop(0.5, 'rgba(40, 55, 160, 0.4)');
+  grad.addColorStop(1, 'rgba(30, 40, 140, 0)');
   gctx.fillStyle = grad;
   gctx.fillRect(0, 0, 64, 64);
   var glowTex = new THREE.CanvasTexture(glowCanvas);
@@ -407,18 +407,18 @@
   function setupScene(canvasId, camZ) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return null;
-    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x1a1a2e, 1);
+    renderer.setClearColor(0x000000, 0);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
     camera.position.set(0, 0, camZ || 5);
-    var l1 = new THREE.DirectionalLight(0x5060e8, 2.0); l1.position.set(3, 4, 5); scene.add(l1);
-    var l2 = new THREE.DirectionalLight(0x4448dd, 1.2); l2.position.set(-4, 2, 3); scene.add(l2);
-    var l3 = new THREE.DirectionalLight(0x6688ff, 0.8); l3.position.set(0, -3, -5); scene.add(l3);
-    scene.add(new THREE.AmbientLight(0x4455cc, 0.3));
+    var l1 = new THREE.DirectionalLight(0x5060e8, 2.5); l1.position.set(3, 4, 5); scene.add(l1);
+    var l2 = new THREE.DirectionalLight(0x4448dd, 1.5); l2.position.set(-4, 2, 3); scene.add(l2);
+    var l3 = new THREE.DirectionalLight(0x6688ff, 1.0); l3.position.set(0, -3, -5); scene.add(l3);
+    scene.add(new THREE.AmbientLight(0x4455cc, 0.5));
     function resize() {
       var w = canvas.clientWidth, h = canvas.clientHeight;
       if (w === 0 || h === 0) return;
@@ -481,9 +481,9 @@
         basePos[idx * 3 + 1] = y;
         basePos[idx * 3 + 2] = z;
         var ht = (y + 0.8) / 3.0;
-        colors[idx * 3] = 0.25 + ht * 0.25;
-        colors[idx * 3 + 1] = 0.28 + ht * 0.3;
-        colors[idx * 3 + 2] = 0.65 + ht * 0.35;
+        colors[idx * 3] = 0.15 + ht * 0.15;
+        colors[idx * 3 + 1] = 0.18 + ht * 0.18;
+        colors[idx * 3 + 2] = 0.45 + ht * 0.25;
         idx++;
       }
     }
@@ -495,11 +495,11 @@
       size: 0.08,
       map: glowTex,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
       depthWrite: false,
       vertexColors: true,
       sizeAttenuation: true,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
     });
     var pts = new THREE.Points(geo, mat);
     s.scene.add(pts);
@@ -529,8 +529,8 @@
     if (!s) return;
 
     var pipeMat = new THREE.MeshPhysicalMaterial({
-      color: 0x4050dd, metalness: 0.2, roughness: 0.3,
-      transparent: true, opacity: 0.2, clearcoat: 0.5,
+      color: 0x3040aa, metalness: 0.3, roughness: 0.2,
+      transparent: true, opacity: 0.55, clearcoat: 0.5,
     });
 
     var paths = [
@@ -559,7 +559,7 @@
 
     var particleGeo = new THREE.SphereGeometry(0.06, 8, 8);
     var particleMat = new THREE.MeshPhysicalMaterial({
-      color: 0x6080ff, emissive: 0x3050dd, emissiveIntensity: 0.6,
+      color: 0x3050cc, emissive: 0x2030aa, emissiveIntensity: 0.4,
       metalness: 0.5, roughness: 0.1, clearcoat: 1.0,
     });
     var particles = [];
@@ -572,7 +572,7 @@
 
     var jGeo = new THREE.SphereGeometry(0.1, 12, 12);
     var jMat = new THREE.MeshPhysicalMaterial({
-      color: 0x5565e5, metalness: 0.4, roughness: 0.05, clearcoat: 1.0,
+      color: 0x3545b5, metalness: 0.4, roughness: 0.05, clearcoat: 1.0,
     });
     [[-2,0.3,0],[2,0.4,0],[0,0.2,-0.2],[-0.8,0.8,0.4],[1.6,1.1,0],[1.1,-0.2,0]].forEach(function(p) {
       var n = new THREE.Mesh(jGeo, jMat);
@@ -606,9 +606,9 @@
     s.scene.add(shieldGroup);
 
     var shells = [
-      { radius: 1.3, detail: 1, faceOpacity: 0.08, wireColor: 0x5565e5, wireOpacity: 0.5, speed: 0.12 },
-      { radius: 0.9, detail: 1, faceOpacity: 0.06, wireColor: 0x6678ff, wireOpacity: 0.35, speed: -0.08 },
-      { radius: 0.55, detail: 0, faceOpacity: 0.1, wireColor: 0x7788ff, wireOpacity: 0.7, speed: 0.18 },
+      { radius: 1.3, detail: 1, faceOpacity: 0.12, wireColor: 0x3545b5, wireOpacity: 0.7, speed: 0.12 },
+      { radius: 0.9, detail: 1, faceOpacity: 0.1, wireColor: 0x4055cc, wireOpacity: 0.55, speed: -0.08 },
+      { radius: 0.55, detail: 0, faceOpacity: 0.15, wireColor: 0x4560dd, wireOpacity: 0.85, speed: 0.18 },
     ];
 
     var shellGroups = [];
@@ -619,7 +619,7 @@
       var lineMat = new THREE.LineBasicMaterial({ color: sh.wireColor, transparent: true, opacity: sh.wireOpacity });
       group.add(new THREE.LineSegments(edges, lineMat));
       var faceMat = new THREE.MeshPhysicalMaterial({
-        color: 0x4050dd, metalness: 0.2, roughness: 0.4,
+        color: 0x3040aa, metalness: 0.2, roughness: 0.4,
         transparent: true, opacity: sh.faceOpacity, side: THREE.DoubleSide, clearcoat: 0.3,
       });
       group.add(new THREE.Mesh(icoGeo, faceMat));
@@ -629,7 +629,7 @@
 
     var coreGeo = new THREE.SphereGeometry(0.22, 16, 16);
     var coreMat = new THREE.MeshPhysicalMaterial({
-      color: 0x6080ff, emissive: 0x4060dd, emissiveIntensity: 0.8,
+      color: 0x3050cc, emissive: 0x2040aa, emissiveIntensity: 0.5,
       metalness: 0.5, roughness: 0.05, clearcoat: 1.0,
     });
     var core = new THREE.Mesh(coreGeo, coreMat);
