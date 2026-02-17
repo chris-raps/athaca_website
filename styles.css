@@ -12,7 +12,7 @@
 
 :root {
   --bg: #FFFFFF;
-  --bg-alt: #F5F5F5;
+  --bg-alt: #FFFFFF;
   --bg-dark: #111111;
   --bg-card: #FFFFFF;
   --fg: #111111;
@@ -384,6 +384,25 @@ body {
 .gradient-highlight {
   color: var(--fg);
   font-weight: 700;
+}
+
+.highlight {
+  color: var(--fg);
+  font-weight: 700;
+  background: rgba(65, 20, 120, 0.15);
+  padding: 2px 6px;
+  margin: 0 -6px;
+  border-radius: 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.service-canvas {
+  width: 100%;
+  height: 200px;
+  display: block;
+  margin-bottom: 20px;
+  border-radius: 8px;
 }
 
 /* ============================

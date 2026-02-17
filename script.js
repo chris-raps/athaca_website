@@ -384,594 +384,402 @@
   animate();
 })();
 
-// ============================
-// Service Card Mini-Blobs
-// ============================
-(function initServiceBlobs() {
-  const configs = [
-    { id: 'canvas-synth', shape: 'dna',    color: 0x4850dd },
-    { id: 'canvas-agent', shape: 'nodes',  color: 0x4555cc },
-    { id: 'canvas-govern', shape: 'shield', color: 0x5050e0 },
-  ];
 
-  configs.forEach(cfg => {
-    const canvas = document.getElementById(cfg.id);
-    if (!canvas) return;
+// ============================
+// Service Card 3D Visualizations
+// ============================
+(function initServiceVisuals() {
+  // Shared glow point texture
+  var glowCanvas = document.createElement('canvas');
+  glowCanvas.width = 64;
+  glowCanvas.height = 64;
+  var gctx = glowCanvas.getContext('2d');
+  var grad = gctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  grad.addColorStop(0.15, 'rgba(140, 160, 255, 0.9)');
+  grad.addColorStop(0.5, 'rgba(80, 100, 230, 0.4)');
+  grad.addColorStop(1, 'rgba(60, 60, 200, 0)');
+  gctx.fillStyle = grad;
+  gctx.fillRect(0, 0, 64, 64);
+  var glowTex = new THREE.CanvasTexture(glowCanvas);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  // Shared scene setup
+  function setupScene(canvasId, camZ) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-    camera.position.set(0, 0, 3.8);
-
-    const geometry = new THREE.SphereGeometry(1.0, 80, 80);
-    const posAttr = geometry.attributes.position;
-    const origPos = new Float32Array(posAttr.array.length);
-    origPos.set(posAttr.array);
-
-    const material = new THREE.MeshPhysicalMaterial({
-      color: cfg.color,
-      metalness: 0.3,
-      roughness: 0.04,
-      reflectivity: 1.0,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.02,
-      envMapIntensity: 2.5,
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-
-    // Lights — pink/blue
-    const l1 = new THREE.DirectionalLight(0x6688ff, 2.5);
-    l1.position.set(3, 4, 5);
-    scene.add(l1);
-    const l2 = new THREE.DirectionalLight(0xff66aa, 1.8);
-    l2.position.set(-4, 2, 3);
-    scene.add(l2);
-    const l3 = new THREE.DirectionalLight(0x4488ff, 1.2);
-    l3.position.set(2, -3, -4);
-    scene.add(l3);
-    scene.add(new THREE.AmbientLight(0x8888cc, 0.25));
-
-    // Simple env map
-    const envGeo = new THREE.SphereGeometry(20, 16, 16);
-    const envMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true });
-    const eColors = new Float32Array(envGeo.attributes.position.count * 3);
-    for (let i = 0; i < envGeo.attributes.position.count; i++) {
-      const y = envGeo.attributes.position.getY(i);
-      const t = (y + 20) / 40;
-      eColors[i*3]   = 0.06 + t * 0.18;
-      eColors[i*3+1] = 0.04 + t * 0.1;
-      eColors[i*3+2] = 0.1 + t * 0.2;
-    }
-    envGeo.setAttribute('color', new THREE.BufferAttribute(eColors, 3));
-    const envMesh = new THREE.Mesh(envGeo, envMat);
-    scene.add(envMesh);
-
-    const cubeRT = new THREE.WebGLCubeRenderTarget(128);
-    const cubeCam = new THREE.CubeCamera(0.1, 100, cubeRT);
-    scene.add(cubeCam);
-    mesh.visible = false;
-    cubeCam.update(renderer, scene);
-    material.envMap = cubeRT.texture;
-    material.needsUpdate = true;
-    mesh.visible = true;
-    envMesh.visible = false;
-
-    // Shape functions for each service
-    const Rm = 1.0;
-
-    function shapeDNAMini(nx, ny, nz, t) {
-      const theta = Math.atan2(nz, nx);
-      const yPos = ny * 3.5;
-      const twist = yPos * 3.0 + t * 0.8;
-      function aDist(a, b) { let d=a-b; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; return d; }
-      const d1 = aDist(theta, twist);
-      const d2 = aDist(theta, twist + Math.PI);
-      const s = Math.max(Math.exp(-d1*d1*2.5), Math.exp(-d2*d2*2.5));
-      const rung = Math.pow(Math.max(0, Math.cos(yPos*5.5)), 8) * (1-s) * 0.3;
-      const r = Rm * (0.1 + s * 0.8 + rung);
-      return [nx*r, ny*Rm*1.8, nz*r];
-    }
-
-    function shapeNodes(nx, ny, nz, t) {
-      // Network of interconnected nodes
-      const centers = [
-        [0.0, 0.7, 0.0], [0.65, 0.0, 0.3], [-0.5, 0.1, 0.55],
-        [0.2, -0.6, -0.3], [-0.3, -0.4, -0.6], [0.5, 0.4, -0.5],
-      ];
-      let nodeVal = 0;
-      for (const c of centers) {
-        const dx = nx-c[0], dy = ny-c[1], dz = nz-c[2];
-        nodeVal += Math.exp(-Math.sqrt(dx*dx+dy*dy+dz*dz) * 5.0);
-      }
-      // Thin connections between all pairs
-      let bondVal = 0;
-      for (let i = 0; i < centers.length; i++) {
-        for (let j = i+1; j < centers.length; j++) {
-          const ax=centers[i][0], ay=centers[i][1], az=centers[i][2];
-          const bx=centers[j][0]-ax, by=centers[j][1]-ay, bz=centers[j][2]-az;
-          const bl = Math.sqrt(bx*bx+by*by+bz*bz);
-          const ex=bx/bl, ey=by/bl, ez=bz/bl;
-          const px=nx-ax, py=ny-ay, pz=nz-az;
-          const dot = Math.max(0, Math.min(bl, px*ex+py*ey+pz*ez));
-          const cx2=px-ex*dot, cy2=py-ey*dot, cz2=pz-ez*dot;
-          const perp = Math.sqrt(cx2*cx2+cy2*cy2+cz2*cz2);
-          bondVal += Math.exp(-perp*18) * 0.15;
-        }
-      }
-      const r = Rm * (0.12 + nodeVal * 0.9 + bondVal);
-      const noise = Math.sin(nx*4+ny*3+nz*5+t*0.5)*0.01;
-      return [nx*(r+noise), ny*(r+noise), nz*(r+noise)];
-    }
-
-    function shapeShield(nx, ny, nz, t) {
-      // Shield / governance framework shape
-      const theta = Math.atan2(nz, nx);
-      // Pointed bottom, rounded top
-      let shieldR;
-      if (ny > 0.2) {
-        // Top dome
-        shieldR = Rm * 0.8;
-      } else if (ny > -0.4) {
-        // Tapering middle
-        const taper = 1.0 - Math.pow(Math.abs(ny - 0.2) / 0.6, 0.8) * 0.3;
-        shieldR = Rm * 0.8 * taper;
-      } else {
-        // Bottom point
-        const pointT = Math.min((-ny - 0.4) / 0.6, 1.0);
-        shieldR = Rm * 0.56 * (1.0 - pointT * pointT);
-      }
-      shieldR = Math.max(shieldR, Rm * 0.04);
-
-      // Front/back flattening for shield shape
-      const flatFactor = 1.0 - Math.abs(Math.sin(theta)) * 0.0;
-      // Slight vertical lines for governance/structure feel
-      const lines = Math.pow(Math.abs(Math.cos(theta * 3)), 20) * 0.08;
-
-      const r = shieldR + lines * Rm;
-      const noise = Math.sin(nx*3+ny*5+nz*4+t*0.4)*0.01;
-      return [nx*(r+noise), ny*(r+noise)*1.2, nz*(r+noise)];
-    }
-
-    const shapeFn = cfg.shape === 'dna' ? shapeDNAMini :
-                    cfg.shape === 'nodes' ? shapeNodes : shapeShield;
-
-    const clock = new THREE.Clock();
-
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+    camera.position.set(0, 0, camZ || 5);
+    var l1 = new THREE.DirectionalLight(0x5060e8, 2.0); l1.position.set(3, 4, 5); scene.add(l1);
+    var l2 = new THREE.DirectionalLight(0x4448dd, 1.2); l2.position.set(-4, 2, 3); scene.add(l2);
+    var l3 = new THREE.DirectionalLight(0x6688ff, 0.8); l3.position.set(0, -3, -5); scene.add(l3);
+    scene.add(new THREE.AmbientLight(0x4455cc, 0.3));
     function resize() {
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
+      var w = canvas.clientWidth, h = canvas.clientHeight;
       if (w === 0 || h === 0) return;
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
     resize();
+    window.addEventListener('resize', resize);
+    var isVis = false;
+    var obs = new IntersectionObserver(function(e) { isVis = e[0].isIntersecting; }, { threshold: 0.1 });
+    obs.observe(canvas);
+    return { canvas: canvas, renderer: renderer, scene: scene, camera: camera, visible: function() { return isVis; } };
+  }
 
-    // Only animate when visible
-    let isVisible = false;
-    const observer = new IntersectionObserver(entries => {
-      isVisible = entries[0].isIntersecting;
-    }, { threshold: 0.1 });
-    observer.observe(canvas);
+  // ---- 1. Particle Human Silhouette (Synthetic Patients) ----
+  (function() {
+    var s = setupScene('canvas-synth', 4.5);
+    if (!s) return;
+    s.camera.position.set(0, 0.5, 4.5);
 
+    var parts = [
+      { cx:0, cy:1.7, cz:0, rx:0.22, ry:0.25, rz:0.2, w:15 },
+      { cx:0, cy:1.4, cz:0, rx:0.08, ry:0.1, rz:0.07, w:3 },
+      { cx:0, cy:1.15, cz:0, rx:0.38, ry:0.18, rz:0.16, w:20 },
+      { cx:0, cy:0.85, cz:0, rx:0.3, ry:0.18, rz:0.15, w:15 },
+      { cx:0, cy:0.55, cz:0, rx:0.28, ry:0.15, rz:0.14, w:12 },
+      { cx:-0.45, cy:1.05, cz:0, rx:0.07, ry:0.22, rz:0.07, w:8 },
+      { cx:0.45, cy:1.05, cz:0, rx:0.07, ry:0.22, rz:0.07, w:8 },
+      { cx:-0.5, cy:0.7, cz:0, rx:0.06, ry:0.18, rz:0.06, w:6 },
+      { cx:0.5, cy:0.7, cz:0, rx:0.06, ry:0.18, rz:0.06, w:6 },
+      { cx:-0.15, cy:0.15, cz:0, rx:0.11, ry:0.28, rz:0.1, w:12 },
+      { cx:0.15, cy:0.15, cz:0, rx:0.11, ry:0.28, rz:0.1, w:12 },
+      { cx:-0.15, cy:-0.35, cz:0, rx:0.08, ry:0.25, rz:0.08, w:9 },
+      { cx:0.15, cy:-0.35, cz:0, rx:0.08, ry:0.25, rz:0.08, w:9 },
+    ];
+
+    var totalW = 0;
+    for (var pi = 0; pi < parts.length; pi++) totalW += parts[pi].w;
+    var count = 900;
+    var positions = new Float32Array(count * 3);
+    var basePos = new Float32Array(count * 3);
+    var colors = new Float32Array(count * 3);
+    var idx = 0;
+
+    for (var pi = 0; pi < parts.length; pi++) {
+      var part = parts[pi];
+      var partCount = Math.round(count * part.w / totalW);
+      for (var i = 0; i < partCount && idx < count; i++) {
+        var theta = Math.random() * Math.PI * 2;
+        var phi = Math.acos(2 * Math.random() - 1);
+        var r = Math.pow(Math.random(), 1/3);
+        var x = part.cx + Math.sin(phi) * Math.cos(theta) * part.rx * r;
+        var y = part.cy + Math.cos(phi) * part.ry * r;
+        var z = part.cz + Math.sin(phi) * Math.sin(theta) * part.rz * r;
+        positions[idx * 3] = x;
+        positions[idx * 3 + 1] = y;
+        positions[idx * 3 + 2] = z;
+        basePos[idx * 3] = x;
+        basePos[idx * 3 + 1] = y;
+        basePos[idx * 3 + 2] = z;
+        var ht = (y + 0.8) / 3.0;
+        colors[idx * 3] = 0.25 + ht * 0.25;
+        colors[idx * 3 + 1] = 0.28 + ht * 0.3;
+        colors[idx * 3 + 2] = 0.65 + ht * 0.35;
+        idx++;
+      }
+    }
+
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    var mat = new THREE.PointsMaterial({
+      size: 0.055,
+      map: glowTex,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      vertexColors: true,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+    });
+    var pts = new THREE.Points(geo, mat);
+    s.scene.add(pts);
+
+    var clock = new THREE.Clock();
     function animate() {
       requestAnimationFrame(animate);
-      if (!isVisible) return;
-
-      const t = clock.getElapsedTime();
-      const pos = posAttr.array;
-
-      for (let i = 0; i < pos.length; i += 3) {
-        const ox = origPos[i], oy = origPos[i+1], oz = origPos[i+2];
-        const len = Math.sqrt(ox*ox + oy*oy + oz*oz);
-        const nxi = ox/len, nyi = oy/len, nzi = oz/len;
-
-        // Gentle breathing + shape
-        const breathe = 1.0 + Math.sin(t * 0.8) * 0.03;
-        const [sx, sy, sz] = shapeFn(nxi, nyi, nzi, t);
-        pos[i]   = sx * breathe;
-        pos[i+1] = sy * breathe;
-        pos[i+2] = sz * breathe;
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      var arr = geo.attributes.position.array;
+      for (var i = 0; i < count; i++) {
+        var i3 = i * 3;
+        arr[i3] = basePos[i3] + Math.sin(t * 0.4 + i * 0.7) * 0.02;
+        arr[i3+1] = basePos[i3+1] + Math.cos(t * 0.5 + i * 0.5) * 0.015;
+        arr[i3+2] = basePos[i3+2] + Math.sin(t * 0.35 + i * 0.3) * 0.02;
       }
-      posAttr.needsUpdate = true;
-      geometry.computeVertexNormals();
-
-      mesh.rotation.y = t * 0.25;
-      mesh.rotation.x = Math.sin(t * 0.3) * 0.1;
-      mesh.position.y = Math.sin(t * 0.6) * 0.05;
-
-      renderer.render(scene, camera);
+      geo.attributes.position.needsUpdate = true;
+      pts.rotation.y = Math.sin(t * 0.15) * 0.4;
+      s.renderer.render(s.scene, s.camera);
     }
-
     animate();
-    window.addEventListener('resize', resize);
-  });
+  })();
+
+  // ---- 2. Flowing Pipeline (Agentic AI Workflows) ----
+  (function() {
+    var s = setupScene('canvas-agent', 5.5);
+    if (!s) return;
+
+    var pipeMat = new THREE.MeshPhysicalMaterial({
+      color: 0x4050dd, metalness: 0.2, roughness: 0.3,
+      transparent: true, opacity: 0.2, clearcoat: 0.5,
+    });
+
+    var paths = [
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-2, 0.3, 0), new THREE.Vector3(-0.8, 0.8, 0.4),
+        new THREE.Vector3(0, 0.2, -0.2), new THREE.Vector3(0.8, 0.7, 0.2),
+        new THREE.Vector3(2, 0.4, 0),
+      ]),
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0.2, -0.2), new THREE.Vector3(0.3, 0.9, 0.6),
+        new THREE.Vector3(0.9, 1.4, 0.3), new THREE.Vector3(1.6, 1.1, 0),
+      ]),
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.8, 0.8, 0.4), new THREE.Vector3(-0.4, 0.0, 0.5),
+        new THREE.Vector3(0.3, -0.5, 0.2), new THREE.Vector3(1.1, -0.2, 0),
+      ]),
+    ];
+
+    var pipeGroup = new THREE.Group();
+    s.scene.add(pipeGroup);
+
+    paths.forEach(function(path) {
+      var tubeGeo = new THREE.TubeGeometry(path, 40, 0.05, 8, false);
+      pipeGroup.add(new THREE.Mesh(tubeGeo, pipeMat));
+    });
+
+    var particleGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    var particleMat = new THREE.MeshPhysicalMaterial({
+      color: 0x6080ff, emissive: 0x3050dd, emissiveIntensity: 0.6,
+      metalness: 0.5, roughness: 0.1, clearcoat: 1.0,
+    });
+    var particles = [];
+    for (var i = 0; i < 25; i++) {
+      var mesh = new THREE.Mesh(particleGeo, particleMat);
+      var pathIdx = Math.floor(Math.random() * paths.length);
+      particles.push({ mesh: mesh, pathIdx: pathIdx, speed: 0.08 + Math.random() * 0.12, offset: Math.random() });
+      pipeGroup.add(mesh);
+    }
+
+    var jGeo = new THREE.SphereGeometry(0.1, 12, 12);
+    var jMat = new THREE.MeshPhysicalMaterial({
+      color: 0x5565e5, metalness: 0.4, roughness: 0.05, clearcoat: 1.0,
+    });
+    [[-2,0.3,0],[2,0.4,0],[0,0.2,-0.2],[-0.8,0.8,0.4],[1.6,1.1,0],[1.1,-0.2,0]].forEach(function(p) {
+      var n = new THREE.Mesh(jGeo, jMat);
+      n.position.set(p[0], p[1], p[2]);
+      pipeGroup.add(n);
+    });
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      particles.forEach(function(p) {
+        var progress = (p.offset + t * p.speed) % 1;
+        var pos = paths[p.pathIdx].getPointAt(progress);
+        p.mesh.position.copy(pos);
+      });
+      pipeGroup.rotation.y = Math.sin(t * 0.12) * 0.35;
+      pipeGroup.rotation.x = Math.sin(t * 0.08) * 0.1;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+
+  // ---- 3. Layered Shield (AI Strategy & Governance) ----
+  (function() {
+    var s = setupScene('canvas-govern', 4.5);
+    if (!s) return;
+
+    var shieldGroup = new THREE.Group();
+    s.scene.add(shieldGroup);
+
+    var shells = [
+      { radius: 1.3, detail: 1, faceOpacity: 0.08, wireColor: 0x5565e5, wireOpacity: 0.5, speed: 0.12 },
+      { radius: 0.9, detail: 1, faceOpacity: 0.06, wireColor: 0x6678ff, wireOpacity: 0.35, speed: -0.08 },
+      { radius: 0.55, detail: 0, faceOpacity: 0.1, wireColor: 0x7788ff, wireOpacity: 0.7, speed: 0.18 },
+    ];
+
+    var shellGroups = [];
+    shells.forEach(function(sh, i) {
+      var group = new THREE.Group();
+      var icoGeo = new THREE.IcosahedronGeometry(sh.radius, sh.detail);
+      var edges = new THREE.EdgesGeometry(icoGeo);
+      var lineMat = new THREE.LineBasicMaterial({ color: sh.wireColor, transparent: true, opacity: sh.wireOpacity });
+      group.add(new THREE.LineSegments(edges, lineMat));
+      var faceMat = new THREE.MeshPhysicalMaterial({
+        color: 0x4050dd, metalness: 0.2, roughness: 0.4,
+        transparent: true, opacity: sh.faceOpacity, side: THREE.DoubleSide, clearcoat: 0.3,
+      });
+      group.add(new THREE.Mesh(icoGeo, faceMat));
+      shieldGroup.add(group);
+      shellGroups.push({ group: group, speed: sh.speed });
+    });
+
+    var coreGeo = new THREE.SphereGeometry(0.22, 16, 16);
+    var coreMat = new THREE.MeshPhysicalMaterial({
+      color: 0x6080ff, emissive: 0x4060dd, emissiveIntensity: 0.8,
+      metalness: 0.5, roughness: 0.05, clearcoat: 1.0,
+    });
+    var core = new THREE.Mesh(coreGeo, coreMat);
+    shieldGroup.add(core);
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      shellGroups.forEach(function(sg, i) {
+        sg.group.rotation.y = t * sg.speed;
+        sg.group.rotation.x = t * sg.speed * 0.7 + i * 0.5;
+        var sc = 1 + Math.sin(t * 0.5 + i * 1.2) * 0.03;
+        sg.group.scale.setScalar(sc);
+      });
+      core.scale.setScalar(1 + Math.sin(t * 1.5) * 0.15);
+      shieldGroup.rotation.y = t * 0.06;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
 })();
 
 // ============================
-// Roadmap Morphing Blob (scroll-driven)
-// ============================
-(function initRoadmapBlob() {
-  const canvas = document.getElementById('roadmap-blob');
-  if (!canvas) return;
-
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-  camera.position.set(0, 0, 4.0);
-
-  const geometry = new THREE.SphereGeometry(1.2, 96, 96);
-  const posAttr = geometry.attributes.position;
-  const origPos = new Float32Array(posAttr.array.length);
-  origPos.set(posAttr.array);
-
-  const material = new THREE.MeshPhysicalMaterial({
-    color: 0x5050e0,
-    metalness: 0.28,
-    roughness: 0.03,
-    reflectivity: 1.0,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.01,
-    envMapIntensity: 2.8,
-  });
-
-  const mesh = new THREE.Mesh(geometry, material);
-  scene.add(mesh);
-
-  // Lights
-  scene.add(Object.assign(new THREE.DirectionalLight(0x6688ff, 2.5), { position: new THREE.Vector3(3, 4, 5) }));
-  scene.add(Object.assign(new THREE.DirectionalLight(0xff66aa, 1.8), { position: new THREE.Vector3(-4, 2, 3) }));
-  scene.add(Object.assign(new THREE.DirectionalLight(0x4488ff, 1.3), { position: new THREE.Vector3(2, -3, -4) }));
-  scene.add(new THREE.AmbientLight(0x8888cc, 0.25));
-
-  // Env map
-  const envGeo = new THREE.SphereGeometry(20, 16, 16);
-  const envMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true });
-  const eCol = new Float32Array(envGeo.attributes.position.count * 3);
-  for (let i = 0; i < envGeo.attributes.position.count; i++) {
-    const y = envGeo.attributes.position.getY(i);
-    const tt = (y + 20) / 40;
-    eCol[i*3] = 0.06 + tt * 0.18;
-    eCol[i*3+1] = 0.04 + tt * 0.1;
-    eCol[i*3+2] = 0.1 + tt * 0.22;
-  }
-  envGeo.setAttribute('color', new THREE.BufferAttribute(eCol, 3));
-  const envMesh = new THREE.Mesh(envGeo, envMat);
-  scene.add(envMesh);
-  const cubeRT = new THREE.WebGLCubeRenderTarget(128);
-  const cubeCam = new THREE.CubeCamera(0.1, 100, cubeRT);
-  scene.add(cubeCam);
-  mesh.visible = false;
-  cubeCam.update(renderer, scene);
-  material.envMap = cubeRT.texture;
-  material.needsUpdate = true;
-  mesh.visible = true;
-  envMesh.visible = false;
-
-  const Rm = 1.2;
-  function aDist(a, b) { let d=a-b; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; return d; }
-
-  // Step 1: Magnifying glass / target — finding the problem
-  function shapeTarget(nx, ny, nz, t) {
-    const horiz = Math.sqrt(nx*nx + nz*nz);
-    // Disc shape
-    const disc = Math.exp(-ny*ny*12.0);
-    // Ring pattern
-    const ring1 = Math.exp(-Math.pow(horiz-0.6, 2)*40) * disc;
-    const ring2 = Math.exp(-Math.pow(horiz-0.3, 2)*40) * disc;
-    const center = Math.exp(-horiz*horiz*15) * disc;
-    // Handle
-    const handleAngle = Math.atan2(nz, nx);
-    const handleDir = Math.exp(-aDist(handleAngle, -0.7)*aDist(handleAngle, -0.7)*4.0);
-    const handleOn = (horiz > 0.6) ? handleDir * Math.exp(-ny*ny*8) * 0.5 : 0;
-    const r = Rm * (0.12 + disc*0.3 + ring1*0.35 + ring2*0.25 + center*0.3 + handleOn);
-    return [nx*r, ny*r, nz*r];
-  }
-
-  // Step 2: Shield — regulatory compliance
-  function shapeShield(nx, ny, nz, t) {
-    let sr;
-    if (ny > 0.2) {
-      sr = Rm * 0.85;
-    } else if (ny > -0.3) {
-      sr = Rm * 0.85 * (1.0 - Math.pow((0.2-ny)/0.5, 0.7)*0.25);
-    } else {
-      const pt = Math.min((-ny - 0.3) / 0.7, 1.0);
-      sr = Rm * 0.64 * (1.0 - pt*pt);
-    }
-    sr = Math.max(sr, Rm * 0.03);
-    const lines = Math.pow(Math.abs(Math.cos(Math.atan2(nz,nx)*4)), 25)*0.04;
-    return [nx*(sr+lines), ny*(sr+lines)*1.25, nz*(sr+lines)];
-  }
-
-  // Step 3: Gear — production/operations
-  function shapeGear(nx, ny, nz, t) {
-    const theta = Math.atan2(nz, nx);
-    const disc = Math.exp(-ny*ny*6.0);
-    const teeth = 8;
-    const toothVal = Math.pow(Math.max(0, Math.cos(theta*teeth)), 3.0) * 0.2;
-    const rim = Math.exp(-Math.pow(Math.sqrt(nx*nx+nz*nz)-0.7, 2)*20) * disc;
-    const hub = Math.exp(-(nx*nx+nz*nz)*8) * disc;
-    // Spokes
-    const spokeCount = 4;
-    const spoke = Math.pow(Math.max(0, Math.cos(theta*spokeCount)), 8) * 0.15 * disc;
-    const r = Rm * (0.1 + disc*0.15 + rim*0.4 + hub*0.35 + toothVal*disc + spoke);
-    return [nx*r, ny*r*0.7, nz*r];
-  }
-
-  // Step 4: Handshake / connected circles — partnership
-  function shapePartner(nx, ny, nz, t) {
-    const c1 = [-0.35, 0, 0], c2 = [0.35, 0, 0];
-    const d1x=nx-c1[0], d1y=ny-c1[1], d1z=nz-c1[2];
-    const d2x=nx-c2[0], d2y=ny-c2[1], d2z=nz-c2[2];
-    const dist1 = Math.sqrt(d1x*d1x+d1y*d1y+d1z*d1z);
-    const dist2 = Math.sqrt(d2x*d2x+d2y*d2y+d2z*d2z);
-    const sphere1 = Math.exp(-dist1*5.0);
-    const sphere2 = Math.exp(-dist2*5.0);
-    // Overlap region (connection)
-    const overlap = Math.exp(-Math.abs(nx)*6) * Math.exp(-ny*ny*3) * 0.3;
-    const r = Rm * (0.1 + sphere1*0.75 + sphere2*0.75 + overlap);
-    const noise = Math.sin(nx*3+ny*4+nz*3+t*0.4)*0.01;
-    return [nx*(r+noise), ny*(r+noise), nz*(r+noise)];
-  }
-
-  const roadmapShapes = [shapeTarget, shapeShield, shapeGear, shapePartner];
-
-  // Track active step based on scroll
-  let activeStep = 0;
-  let targetStep = 0;
-  let blendProgress = 0;
-
-  const steps = document.querySelectorAll('.roadmap-step');
-  const dots = document.querySelectorAll('.step-dot');
-
-  const stepObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const idx = parseInt(entry.target.dataset.step);
-        targetStep = idx;
-        // Update active classes
-        steps.forEach(s => s.classList.remove('active'));
-        entry.target.classList.add('active');
-        dots.forEach(d => d.classList.remove('active'));
-        if (dots[idx]) dots[idx].classList.add('active');
-      }
-    });
-  }, { threshold: 0.5, rootMargin: '-20% 0px -20% 0px' });
-
-  steps.forEach(s => stepObserver.observe(s));
-  // Set first step active by default
-  if (steps[0]) steps[0].classList.add('active');
-
-  // Dot clicks
-  dots.forEach(dot => {
-    dot.addEventListener('click', () => {
-      const idx = parseInt(dot.dataset.step);
-      if (steps[idx]) steps[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
-  });
-
-  const clock = new THREE.Clock();
-  let isVisible = false;
-  const visObs = new IntersectionObserver(entries => {
-    isVisible = entries[0].isIntersecting;
-  }, { threshold: 0.05 });
-  visObs.observe(canvas);
-
-  function resize() {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    if (w === 0 || h === 0) return;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  function animate() {
-    requestAnimationFrame(animate);
-    if (!isVisible) return;
-
-    const t = clock.getElapsedTime();
-
-    // Smooth blend between steps
-    if (activeStep !== targetStep) {
-      blendProgress += 0.025;
-      if (blendProgress >= 1.0) {
-        activeStep = targetStep;
-        blendProgress = 0;
-      }
-    }
-
-    const shapeFnA = roadmapShapes[activeStep] || roadmapShapes[0];
-    const shapeFnB = roadmapShapes[targetStep] || roadmapShapes[0];
-    const blend = blendProgress * blendProgress * (3 - 2 * blendProgress); // smoothstep
-
-    const pos = posAttr.array;
-    for (let i = 0; i < pos.length; i += 3) {
-      const ox = origPos[i], oy = origPos[i+1], oz = origPos[i+2];
-      const len = Math.sqrt(ox*ox + oy*oy + oz*oz);
-      const nxi = ox/len, nyi = oy/len, nzi = oz/len;
-
-      const a = shapeFnA(nxi, nyi, nzi, t);
-      const b = shapeFnB(nxi, nyi, nzi, t);
-
-      const breathe = 1.0 + Math.sin(t * 0.8) * 0.02;
-      pos[i]   = (a[0] + (b[0]-a[0])*blend) * breathe;
-      pos[i+1] = (a[1] + (b[1]-a[1])*blend) * breathe;
-      pos[i+2] = (a[2] + (b[2]-a[2])*blend) * breathe;
-    }
-    posAttr.needsUpdate = true;
-    geometry.computeVertexNormals();
-
-    mesh.rotation.y = t * 0.2;
-    mesh.rotation.x = Math.sin(t * 0.3) * 0.08;
-    mesh.position.y = Math.sin(t * 0.6) * 0.04;
-
-    renderer.render(scene, camera);
-  }
-
-  animate();
-})();
-
-// ============================
-// 3D DNA Double Helix
+// 3D DNA Double Helix (Hero)
 // ============================
 (function initDNAHelix() {
-  const canvas = document.getElementById('hero-dna');
+  var canvas = document.getElementById('hero-dna');
   if (!canvas) return;
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 1.2;
 
-  const scene = new THREE.Scene();
-
-  const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
   camera.position.set(0, 0, 14);
 
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0x4455cc, 0.3);
-  scene.add(ambientLight);
+  // Rich multi-directional lighting (matching the orb)
+  [[0x4455ee, 3.2, 5, 5, 5], [0x5560e8, 2.8, -5, 3, 3], [0x4466ee, 2.0, 3, -4, -5],
+   [0x5050dd, 1.6, -2, 7, -2], [0x4848cc, 1.5, 0, -2, -7]].forEach(function(cfg) {
+    var l = new THREE.DirectionalLight(cfg[0], cfg[1]);
+    l.position.set(cfg[2], cfg[3], cfg[4]);
+    scene.add(l);
+  });
+  scene.add(new THREE.AmbientLight(0x4455cc, 0.35));
 
-  const mainLight = new THREE.DirectionalLight(0x5060e8, 2.5);
-  mainLight.position.set(5, 8, 5);
-  scene.add(mainLight);
+  // Environment sphere for iridescent reflections
+  var envGeo = new THREE.SphereGeometry(30, 32, 32);
+  var envMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true });
+  var envColors = new Float32Array(envGeo.attributes.position.count * 3);
+  for (var ei = 0; ei < envGeo.attributes.position.count; ei++) {
+    var ey = envGeo.attributes.position.getY(ei);
+    var ex = envGeo.attributes.position.getX(ei);
+    var ez = envGeo.attributes.position.getZ(ei);
+    var et = (ey + 30) / 60;
+    var ea = Math.atan2(ez, ex);
+    envColors[ei * 3]     = 0.08 + et * 0.18 * Math.max(0, Math.cos(ea * 0.5));
+    envColors[ei * 3 + 1] = 0.06 + et * 0.14;
+    envColors[ei * 3 + 2] = 0.32 + et * 0.55 * Math.max(0, Math.sin(ea * 0.5 + 1));
+  }
+  envGeo.setAttribute('color', new THREE.BufferAttribute(envColors, 3));
+  var envSphere = new THREE.Mesh(envGeo, envMat);
+  scene.add(envSphere);
 
-  const fillLight = new THREE.DirectionalLight(0x4448dd, 1.5);
-  fillLight.position.set(-5, -3, 3);
-  scene.add(fillLight);
-
-  const rimLight = new THREE.DirectionalLight(0x7788ff, 1.2);
-  rimLight.position.set(0, 5, -8);
-  scene.add(rimLight);
-
-  // Materials
-  const backboneMat = new THREE.MeshPhysicalMaterial({
-    color: 0x4050dd,
-    metalness: 0.4,
-    roughness: 0.15,
-    clearcoat: 0.8,
-    clearcoatRoughness: 0.1,
+  // Iridescent glass-like materials (matching the orb)
+  var backboneMat = new THREE.MeshPhysicalMaterial({
+    color: 0x4050dd, metalness: 0.3, roughness: 0.04,
+    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.02, envMapIntensity: 2.5,
+  });
+  var basePairMat = new THREE.MeshPhysicalMaterial({
+    color: 0x6070ee, metalness: 0.25, roughness: 0.06,
+    reflectivity: 1.0, clearcoat: 0.8, clearcoatRoughness: 0.05, envMapIntensity: 2.2,
+  });
+  var nodeMat = new THREE.MeshPhysicalMaterial({
+    color: 0x5565e5, metalness: 0.35, roughness: 0.02,
+    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.01, envMapIntensity: 2.8,
   });
 
-  const basePairMat = new THREE.MeshPhysicalMaterial({
-    color: 0x6070ee,
-    metalness: 0.3,
-    roughness: 0.2,
-    clearcoat: 0.6,
-    clearcoatRoughness: 0.15,
-  });
+  var sphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
+  var smallSphereGeo = new THREE.SphereGeometry(0.18, 12, 12);
 
-  const nodeMat = new THREE.MeshPhysicalMaterial({
-    color: 0x5565e5,
-    metalness: 0.5,
-    roughness: 0.1,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
-  });
+  // Tilt group for 30-degree side lean
+  var tiltGroup = new THREE.Group();
+  tiltGroup.rotation.z = Math.PI / 6;
+  scene.add(tiltGroup);
 
-  // Geometry templates
-  const sphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
-  const smallSphereGeo = new THREE.SphereGeometry(0.18, 12, 12);
-
-  // DNA group
-  const dnaGroup = new THREE.Group();
-  scene.add(dnaGroup);
+  var dnaGroup = new THREE.Group();
+  tiltGroup.add(dnaGroup);
 
   // Build the double helix
-  const turns = 4;
-  const pointsPerTurn = 20;
-  const totalPoints = turns * pointsPerTurn;
-  const helixRadius = 1.8;
-  const helixHeight = 24;
-  const yStart = -helixHeight / 2;
+  var turns = 4, pointsPerTurn = 20, totalPoints = turns * pointsPerTurn;
+  var helixRadius = 1.8, helixHeight = 24, yStart = -helixHeight / 2;
 
-  // Function to create a cylinder between two points
   function createCylinder(p1, p2, radius, material) {
-    const dir = new THREE.Vector3().subVectors(p2, p1);
-    const len = dir.length();
-    const geo = new THREE.CylinderGeometry(radius, radius, len, 8, 1);
+    var dir = new THREE.Vector3().subVectors(p2, p1);
+    var len = dir.length();
+    var geo = new THREE.CylinderGeometry(radius, radius, len, 8, 1);
     geo.translate(0, len / 2, 0);
     geo.rotateX(Math.PI / 2);
-    const mesh = new THREE.Mesh(geo, material);
+    var mesh = new THREE.Mesh(geo, material);
     mesh.position.copy(p1);
     mesh.lookAt(p2);
     return mesh;
   }
 
-  const strand1Points = [];
-  const strand2Points = [];
-
-  for (let i = 0; i <= totalPoints; i++) {
-    const t = i / totalPoints;
-    const angle = t * turns * Math.PI * 2;
-    const y = yStart + t * helixHeight;
-
-    // Strand 1
-    const x1 = Math.cos(angle) * helixRadius;
-    const z1 = Math.sin(angle) * helixRadius;
-    strand1Points.push(new THREE.Vector3(x1, y, z1));
-
-    // Strand 2 (offset by PI)
-    const x2 = Math.cos(angle + Math.PI) * helixRadius;
-    const z2 = Math.sin(angle + Math.PI) * helixRadius;
-    strand2Points.push(new THREE.Vector3(x2, y, z2));
-
-    // Node spheres on backbone
-    const node1 = new THREE.Mesh(sphereGeo, nodeMat);
-    node1.position.set(x1, y, z1);
-    dnaGroup.add(node1);
-
-    const node2 = new THREE.Mesh(sphereGeo, nodeMat);
-    node2.position.set(x2, y, z2);
-    dnaGroup.add(node2);
-
-    // Base pair rungs (every 2 points)
+  var strand1 = [], strand2 = [];
+  for (var i = 0; i <= totalPoints; i++) {
+    var t = i / totalPoints;
+    var angle = t * turns * Math.PI * 2;
+    var y = yStart + t * helixHeight;
+    var x1 = Math.cos(angle) * helixRadius, z1 = Math.sin(angle) * helixRadius;
+    var x2 = Math.cos(angle + Math.PI) * helixRadius, z2 = Math.sin(angle + Math.PI) * helixRadius;
+    strand1.push(new THREE.Vector3(x1, y, z1));
+    strand2.push(new THREE.Vector3(x2, y, z2));
+    var n1 = new THREE.Mesh(sphereGeo, nodeMat); n1.position.set(x1, y, z1); dnaGroup.add(n1);
+    var n2 = new THREE.Mesh(sphereGeo, nodeMat); n2.position.set(x2, y, z2); dnaGroup.add(n2);
     if (i % 2 === 0 && i < totalPoints) {
-      const p1 = new THREE.Vector3(x1, y, z1);
-      const p2 = new THREE.Vector3(x2, y, z2);
-      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-
-      // Two half-rungs with a small sphere in the middle
-      const rung1 = createCylinder(p1, mid, 0.06, basePairMat);
-      const rung2 = createCylinder(mid, p2, 0.06, basePairMat);
-      dnaGroup.add(rung1);
-      dnaGroup.add(rung2);
-
-      const midNode = new THREE.Mesh(smallSphereGeo, basePairMat);
-      midNode.position.copy(mid);
-      dnaGroup.add(midNode);
+      var p1 = new THREE.Vector3(x1, y, z1);
+      var p2 = new THREE.Vector3(x2, y, z2);
+      var mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+      dnaGroup.add(createCylinder(p1, mid, 0.06, basePairMat));
+      dnaGroup.add(createCylinder(mid, p2, 0.06, basePairMat));
+      var mn = new THREE.Mesh(smallSphereGeo, basePairMat); mn.position.copy(mid); dnaGroup.add(mn);
     }
   }
 
-  // Backbone cylinders connecting nodes
-  for (let i = 0; i < strand1Points.length - 1; i++) {
-    const seg1 = createCylinder(strand1Points[i], strand1Points[i + 1], 0.08, backboneMat);
-    const seg2 = createCylinder(strand2Points[i], strand2Points[i + 1], 0.08, backboneMat);
-    dnaGroup.add(seg1);
-    dnaGroup.add(seg2);
+  for (var i = 0; i < strand1.length - 1; i++) {
+    dnaGroup.add(createCylinder(strand1[i], strand1[i + 1], 0.08, backboneMat));
+    dnaGroup.add(createCylinder(strand2[i], strand2[i + 1], 0.08, backboneMat));
   }
 
-  // Resize
+  // Render env map for iridescent reflections
+  dnaGroup.visible = false;
+  var cubeRT = new THREE.WebGLCubeRenderTarget(256);
+  var cubeCam = new THREE.CubeCamera(0.1, 100, cubeRT);
+  scene.add(cubeCam);
+  cubeCam.update(renderer, scene);
+  [backboneMat, basePairMat, nodeMat].forEach(function(m) {
+    m.envMap = cubeRT.texture;
+    m.needsUpdate = true;
+  });
+  dnaGroup.visible = true;
+  envSphere.visible = false;
+
   function resize() {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -979,20 +787,12 @@
   resize();
   window.addEventListener('resize', resize);
 
-  // Animation
-  const clock = new THREE.Clock();
-
+  var clock = new THREE.Clock();
   function animate() {
     requestAnimationFrame(animate);
-    const t = clock.getElapsedTime();
-
+    var t = clock.getElapsedTime();
     dnaGroup.rotation.y = t * 0.3;
-    dnaGroup.rotation.x = Math.PI / 6; // 30 degree tilt
-
     renderer.render(scene, camera);
   }
-
   animate();
 })();
-
-// (Scroll animations, nav effect, and anchor scrolling are at the top of this file)
