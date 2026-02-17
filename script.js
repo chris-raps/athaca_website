@@ -984,3 +984,183 @@
     animate();
   })();
 })();
+
+// ============================
+// Why Athaca Card Visuals
+// ============================
+(function initWhyVisuals() {
+  function setupWhy(canvasId, camZ) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, premultipliedAlpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+    camera.position.set(0, 0, camZ || 5);
+    var l1 = new THREE.DirectionalLight(0x5060e8, 2.0); l1.position.set(3, 3, 5); scene.add(l1);
+    var l2 = new THREE.DirectionalLight(0x4448dd, 1.2); l2.position.set(-3, 2, 3); scene.add(l2);
+    scene.add(new THREE.AmbientLight(0x4455cc, 0.6));
+    function resize() {
+      var w = canvas.clientWidth, h = canvas.clientHeight;
+      if (w === 0 || h === 0) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    var isVis = false;
+    var obs = new IntersectionObserver(function(e) { isVis = e[0].isIntersecting; }, { threshold: 0.1 });
+    obs.observe(canvas);
+    return { renderer: renderer, scene: scene, camera: camera, visible: function() { return isVis; } };
+  }
+
+  // ---- Deep Expertise: Three Intersecting Orbits ----
+  (function() {
+    var s = setupWhy('canvas-expertise', 5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var ringMats = [
+      new THREE.LineBasicMaterial({ color: 0x3545b5, transparent: true, opacity: 0.6 }),
+      new THREE.LineBasicMaterial({ color: 0x4055cc, transparent: true, opacity: 0.6 }),
+      new THREE.LineBasicMaterial({ color: 0x5565e5, transparent: true, opacity: 0.6 }),
+    ];
+    var ringTilts = [
+      { x: 0, z: 0 },
+      { x: Math.PI / 3, z: Math.PI / 4 },
+      { x: -Math.PI / 4, z: -Math.PI / 3 },
+    ];
+
+    var orbiters = [];
+    var orbiterMat = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+
+    ringTilts.forEach(function(tilt, i) {
+      var pts = [];
+      for (var j = 0; j <= 64; j++) {
+        var a = (j / 64) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a) * 1.2, Math.sin(a) * 1.2, 0));
+      }
+      var ring = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), ringMats[i]);
+      ring.rotation.x = tilt.x;
+      ring.rotation.z = tilt.z;
+      group.add(ring);
+
+      var orb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), orbiterMat);
+      group.add(orb);
+      orbiters.push({ mesh: orb, tilt: tilt, speed: 0.6 + i * 0.25, offset: i * 2.1 });
+    });
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      orbiters.forEach(function(o) {
+        var a = t * o.speed + o.offset;
+        var x = Math.cos(a) * 1.2;
+        var y = Math.sin(a) * 1.2;
+        var cx = Math.cos(o.tilt.x), sx = Math.sin(o.tilt.x);
+        var cz = Math.cos(o.tilt.z), sz = Math.sin(o.tilt.z);
+        var y2 = y * cx, z2 = y * sx;
+        o.mesh.position.set(x * cz - y2 * sz, x * sz + y2 * cz, z2);
+      });
+      group.rotation.y = t * 0.1;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+
+  // ---- Research-Driven: Rotating Crystal Lattice ----
+  (function() {
+    var s = setupWhy('canvas-research', 5.5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var nodeMat = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+    var edgeMat = new THREE.LineBasicMaterial({ color: 0x4055cc, transparent: true, opacity: 0.45 });
+    var sp = 0.7;
+    var latticeNodes = [];
+
+    for (var ix = -1; ix <= 1; ix++) {
+      for (var iy = -1; iy <= 1; iy++) {
+        for (var iz = -1; iz <= 1; iz++) {
+          var p = [ix * sp, iy * sp, iz * sp];
+          var mesh = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), nodeMat);
+          mesh.position.set(p[0], p[1], p[2]);
+          group.add(mesh);
+          latticeNodes.push(p);
+        }
+      }
+    }
+
+    for (var i = 0; i < latticeNodes.length; i++) {
+      for (var j = i + 1; j < latticeNodes.length; j++) {
+        var dx = latticeNodes[i][0] - latticeNodes[j][0];
+        var dy = latticeNodes[i][1] - latticeNodes[j][1];
+        var dz = latticeNodes[i][2] - latticeNodes[j][2];
+        if (Math.sqrt(dx*dx + dy*dy + dz*dz) < sp * 1.1) {
+          var geo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(latticeNodes[i][0], latticeNodes[i][1], latticeNodes[i][2]),
+            new THREE.Vector3(latticeNodes[j][0], latticeNodes[j][1], latticeNodes[j][2]),
+          ]);
+          group.add(new THREE.LineSegments(geo, edgeMat));
+        }
+      }
+    }
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      group.rotation.y = t * 0.2;
+      group.rotation.x = Math.sin(t * 0.15) * 0.3;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+
+  // ---- Services-Led: Rising Stacked Blocks ----
+  (function() {
+    var s = setupWhy('canvas-services', 5);
+    if (!s) return;
+    var group = new THREE.Group();
+    s.scene.add(group);
+
+    var heights = [0.5, 0.8, 1.2, 1.6];
+    var blockMats = [
+      new THREE.MeshPhysicalMaterial({ color: 0x5565e5, metalness: 0.3, roughness: 0.15, clearcoat: 0.8, transparent: true, opacity: 0.7 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x4555d5, metalness: 0.3, roughness: 0.15, clearcoat: 0.8, transparent: true, opacity: 0.75 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x3545c5, metalness: 0.3, roughness: 0.15, clearcoat: 0.8, transparent: true, opacity: 0.8 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x3040b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0, transparent: true, opacity: 0.85 }),
+    ];
+
+    var blocks = [];
+    heights.forEach(function(h, i) {
+      var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.35, h, 0.35), blockMats[i]);
+      var x = (i - 1.5) * 0.5;
+      mesh.position.set(x, h / 2 - 0.8, 0);
+      group.add(mesh);
+      blocks.push({ mesh: mesh, baseH: h, baseY: h / 2 - 0.8 });
+    });
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!s.visible()) return;
+      var t = clock.getElapsedTime();
+      blocks.forEach(function(b, i) {
+        var pulse = 1 + Math.sin(t * 1.2 + i * 0.8) * 0.08;
+        b.mesh.scale.y = pulse;
+        b.mesh.position.y = b.baseY * pulse;
+      });
+      group.rotation.y = Math.sin(t * 0.2) * 0.4;
+      s.renderer.render(s.scene, s.camera);
+    }
+    animate();
+  })();
+})();

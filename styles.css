@@ -685,6 +685,14 @@ body {
   border-left: 3px solid var(--fg);
 }
 
+.why-canvas {
+  width: 80px;
+  height: 80px;
+  display: block;
+  margin-bottom: 16px;
+  background: transparent !important;
+}
+
 .why-card-title {
   font-family: var(--font-heading);
   font-size: 18px;
