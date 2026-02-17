@@ -57,7 +57,7 @@
 
   // Premium glass-like liquid material
   const material = new THREE.MeshPhysicalMaterial({
-    color: 0x8855cc,
+    color: 0x5050e0,
     metalness: 0.28,
     roughness: 0.02,
     reflectivity: 1.0,
@@ -69,12 +69,12 @@
   const blob = new THREE.Mesh(geometry, material);
   scene.add(blob);
 
-  // Rich purple-dominant lighting
-  [[0x6655dd, 3.2, 5, 5, 5], [0xaa44cc, 2.8, -5, 3, 3], [0x5566dd, 2.0, 3, -4, -5],
-   [0x9955ee, 1.6, -2, 7, -2], [0x7744bb, 1.5, 0, -2, -7]].forEach(([c, i, x, y, z]) => {
+  // Blue-indigo dominant lighting (matches logo)
+  [[0x4455ee, 3.2, 5, 5, 5], [0x5560e8, 2.8, -5, 3, 3], [0x4466ee, 2.0, 3, -4, -5],
+   [0x5050dd, 1.6, -2, 7, -2], [0x4848cc, 1.5, 0, -2, -7]].forEach(([c, i, x, y, z]) => {
     const l = new THREE.DirectionalLight(c, i); l.position.set(x, y, z); scene.add(l);
   });
-  scene.add(new THREE.AmbientLight(0x7755bb, 0.35));
+  scene.add(new THREE.AmbientLight(0x4455cc, 0.35));
 
   // Vibrant environment sphere for colorful reflections
   const envGeometry = new THREE.SphereGeometry(30, 32, 32);
@@ -86,9 +86,9 @@
     const ez = envGeometry.attributes.position.getZ(i);
     const et = (ey + 30) / 60;
     const ea = Math.atan2(ez, ex);
-    envColors[i * 3]     = 0.12 + et * 0.25 * Math.max(0, Math.cos(ea * 0.5));
-    envColors[i * 3 + 1] = 0.04 + et * 0.08;
-    envColors[i * 3 + 2] = 0.28 + et * 0.5 * Math.max(0, Math.sin(ea * 0.5 + 1));
+    envColors[i * 3]     = 0.08 + et * 0.18 * Math.max(0, Math.cos(ea * 0.5));
+    envColors[i * 3 + 1] = 0.06 + et * 0.14;
+    envColors[i * 3 + 2] = 0.32 + et * 0.55 * Math.max(0, Math.sin(ea * 0.5 + 1));
   }
   envGeometry.setAttribute('color', new THREE.BufferAttribute(envColors, 3));
   const envSphere = new THREE.Mesh(envGeometry, envMaterial);
@@ -389,9 +389,9 @@
 // ============================
 (function initServiceBlobs() {
   const configs = [
-    { id: 'canvas-synth', shape: 'dna',    color: 0x7744cc },
-    { id: 'canvas-agent', shape: 'nodes',  color: 0x5555bb },
-    { id: 'canvas-govern', shape: 'shield', color: 0x8855cc },
+    { id: 'canvas-synth', shape: 'dna',    color: 0x4850dd },
+    { id: 'canvas-agent', shape: 'nodes',  color: 0x4555cc },
+    { id: 'canvas-govern', shape: 'shield', color: 0x5050e0 },
   ];
 
   configs.forEach(cfg => {
@@ -618,7 +618,7 @@
   origPos.set(posAttr.array);
 
   const material = new THREE.MeshPhysicalMaterial({
-    color: 0x8855cc,
+    color: 0x5050e0,
     metalness: 0.28,
     roughness: 0.03,
     reflectivity: 1.0,
