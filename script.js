@@ -1237,51 +1237,51 @@
     animate();
   })();
 
-  // ---- 02: Interlocking Gears ----
+  // ---- 02: Document with Scanning Line (Clinical/Regulatory) ----
   (function() {
     var s = setupEngage('canvas-engage2', 5);
     if (!s) return;
     var group = new THREE.Group();
     s.scene.add(group);
 
-    function makeGear(teeth, innerR, outerR) {
-      var pts = [];
-      for (var i = 0; i <= teeth * 2; i++) {
-        var a = (i / (teeth * 2)) * Math.PI * 2;
-        var r = i % 2 === 0 ? outerR : innerR;
-        pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0));
-      }
-      pts.push(pts[0].clone());
-      return new THREE.BufferGeometry().setFromPoints(pts);
+    var frameMat = new THREE.LineBasicMaterial({ color: 0x3545b5, transparent: true, opacity: 0.7 });
+    var framePts = [
+      new THREE.Vector3(-0.7, 1.1, 0), new THREE.Vector3(0.7, 1.1, 0),
+      new THREE.Vector3(0.7, -1.1, 0), new THREE.Vector3(-0.7, -1.1, 0),
+      new THREE.Vector3(-0.7, 1.1, 0),
+    ];
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(framePts), frameMat));
+
+    var lineMat = new THREE.LineBasicMaterial({ color: 0x4055cc, transparent: true, opacity: 0.35 });
+    for (var i = 0; i < 5; i++) {
+      var y = 0.7 - i * 0.35;
+      var w = i === 2 ? 0.35 : 0.5;
+      var pts = [new THREE.Vector3(-0.5, y, 0), new THREE.Vector3(-0.5 + w * 2, y, 0)];
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
     }
 
-    var gearMat1 = new THREE.LineBasicMaterial({ color: 0x3545b5, transparent: true, opacity: 0.7 });
-    var gearMat2 = new THREE.LineBasicMaterial({ color: 0x4560dd, transparent: true, opacity: 0.7 });
+    var scanMat = new THREE.LineBasicMaterial({ color: 0x4560dd, transparent: true, opacity: 0.8 });
+    var scanPts = [new THREE.Vector3(-0.7, 0, 0), new THREE.Vector3(0.7, 0, 0)];
+    var scanLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(scanPts), scanMat);
+    group.add(scanLine);
 
-    var gear1 = new THREE.Line(makeGear(10, 0.7, 0.9), gearMat1);
-    gear1.position.set(-0.55, 0.2, 0);
-    group.add(gear1);
-
-    var gear2 = new THREE.Line(makeGear(8, 0.5, 0.65), gearMat2);
-    gear2.position.set(0.55, -0.15, 0);
-    group.add(gear2);
-
-    var hubMat = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
-    var hub1 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), hubMat);
-    hub1.position.set(-0.55, 0.2, 0);
-    group.add(hub1);
-    var hub2 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), hubMat);
-    hub2.position.set(0.55, -0.15, 0);
-    group.add(hub2);
+    var checkMat = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
+    var checkDot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), checkMat);
+    checkDot.position.set(0.5, -0.8, 0.1);
+    checkDot.visible = false;
+    group.add(checkDot);
 
     var clock = new THREE.Clock();
     function animate() {
       requestAnimationFrame(animate);
       if (!s.visible()) return;
       var t = clock.getElapsedTime();
-      gear1.rotation.z = t * 0.4;
-      gear2.rotation.z = -t * 0.5;
-      group.rotation.y = Math.sin(t * 0.15) * 0.2;
+      var cycle = (t * 0.4) % 1;
+      var scanY = 1.1 - cycle * 2.2;
+      scanLine.position.y = scanY;
+      checkDot.visible = cycle > 0.85;
+      checkDot.scale.setScalar(cycle > 0.85 ? 1 + Math.sin(t * 4) * 0.2 : 0);
+      group.rotation.y = Math.sin(t * 0.2) * 0.15;
       s.renderer.render(s.scene, s.camera);
     }
     animate();
