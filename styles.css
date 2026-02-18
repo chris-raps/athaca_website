@@ -282,7 +282,7 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 14px 32px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: #FFFFFF;
@@ -297,7 +297,7 @@ body {
 
 .btn-secondary:hover {
   border-color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .hero-visual {
