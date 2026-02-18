@@ -668,7 +668,7 @@
 
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-  camera.position.set(0, 0, 6);
+  camera.position.set(0, 0, 9);
 
   // Rich multi-directional lighting (matching the orb)
   [[0x4455ee, 3.2, 5, 5, 5], [0x5560e8, 2.8, -5, 3, 3], [0x4466ee, 2.0, 3, -4, -5],
