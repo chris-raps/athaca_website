@@ -282,20 +282,22 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 14px 32px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: #FFFFFF;
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 500;
   text-decoration: none;
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
   border-radius: 6px;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .btn-secondary:hover {
   border-color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .hero-visual {
