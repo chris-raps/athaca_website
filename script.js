@@ -929,56 +929,112 @@
     animate();
   })();
 
-  // ---- Merged Attention: Two Streams Converging ----
+  // ---- Merged Attention: Double Helix Streams into Glowing Core ----
   (function() {
     var s = setupTrack('canvas-merged', 5);
     if (!s) return;
     var group = new THREE.Group();
     s.scene.add(group);
 
-    var count = 60;
-    var sphereGeo = new THREE.SphereGeometry(0.045, 6, 6);
-    var matA = new THREE.MeshPhysicalMaterial({ color: 0x3545b5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
-    var matB = new THREE.MeshPhysicalMaterial({ color: 0x5565e5, metalness: 0.4, roughness: 0.1, clearcoat: 1.0 });
-    var matMerged = new THREE.MeshPhysicalMaterial({ color: 0x4050dd, emissive: 0x2030aa, emissiveIntensity: 0.3, clearcoat: 1.0 });
+    var matA = new THREE.MeshPhysicalMaterial({ color: 0x3040b5, metalness: 0.5, roughness: 0.05, clearcoat: 1.0 });
+    var matB = new THREE.MeshPhysicalMaterial({ color: 0x5570ee, metalness: 0.5, roughness: 0.05, clearcoat: 1.0 });
+    var matCore = new THREE.MeshPhysicalMaterial({ color: 0x4055dd, emissive: 0x3040cc, emissiveIntensity: 0.6, metalness: 0.5, roughness: 0.05, clearcoat: 1.0 });
 
-    var particles = [];
-    for (var i = 0; i < count; i++) {
-      var stream = i < count / 2 ? 0 : 1;
-      var mesh = new THREE.Mesh(sphereGeo, stream === 0 ? matA : matB);
-      var progress = Math.random();
-      particles.push({ mesh: mesh, stream: stream, progress: progress, speed: 0.15 + Math.random() * 0.1 });
+    // Two helical streams of particles spiraling inward
+    var streamCount = 40;
+    var streams = [];
+    for (var i = 0; i < streamCount; i++) {
+      var side = i < streamCount / 2 ? 0 : 1;
+      var size = 0.03 + Math.random() * 0.03;
+      var mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 6, 6), side === 0 ? matA : matB);
+      var offset = (i % (streamCount / 2)) / (streamCount / 2);
+      streams.push({ mesh: mesh, side: side, offset: offset, speed: 0.3 + Math.random() * 0.15 });
       group.add(mesh);
     }
 
-    var mergePoint = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), matMerged);
-    mergePoint.position.set(1.2, 0, 0);
-    group.add(mergePoint);
+    // Glowing core sphere
+    var core = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), matCore);
+    group.add(core);
+
+    // Pulse rings that expand outward from core
+    var ringMat = new THREE.LineBasicMaterial({ color: 0x4560dd, transparent: true, opacity: 0.5 });
+    var pulseRings = [];
+    for (var r = 0; r < 3; r++) {
+      var pts = [];
+      for (var j = 0; j <= 48; j++) {
+        var a = (j / 48) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a), Math.sin(a), 0));
+      }
+      var ring = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), ringMat.clone());
+      ring.scale.setScalar(0.01);
+      group.add(ring);
+      pulseRings.push({ mesh: ring, phase: r * 1.2 });
+    }
+
+    // Cross-attention arcs connecting the two streams
+    var arcMat = new THREE.LineBasicMaterial({ color: 0x4055cc, transparent: true, opacity: 0.25 });
+    var arcs = [];
+    for (var a = 0; a < 6; a++) {
+      var arcGeo = new THREE.BufferGeometry();
+      var arcPos = new Float32Array(12 * 3);
+      arcGeo.setAttribute('position', new THREE.BufferAttribute(arcPos, 3));
+      var arc = new THREE.Line(arcGeo, arcMat);
+      group.add(arc);
+      arcs.push({ line: arc, pairIdx: a });
+    }
 
     var clock = new THREE.Clock();
     function animate() {
       requestAnimationFrame(animate);
       if (!s.visible()) return;
       var t = clock.getElapsedTime();
-      particles.forEach(function(p) {
-        p.progress = (p.progress + p.speed * 0.01) % 1;
-        var pr = p.progress;
-        var startY = p.stream === 0 ? 0.8 : -0.8;
-        var x = -1.5 + pr * 2.7;
-        var yTarget = 0;
-        var blend = Math.pow(Math.max(0, pr - 0.3) / 0.7, 2);
-        var y = startY * (1 - blend) + yTarget * blend;
-        y += Math.sin(t * 1.5 + p.progress * 6) * 0.08 * (1 - blend);
-        var z = Math.sin(pr * Math.PI) * 0.3 * (p.stream === 0 ? 1 : -1);
+
+      // Spiral particles inward
+      streams.forEach(function(p) {
+        var pr = (p.offset + t * p.speed * 0.15) % 1;
+        var radius = 1.2 * (1 - pr * pr);
+        var angle = pr * Math.PI * 4 + (p.side === 0 ? 0 : Math.PI);
+        var x = Math.cos(angle + t * 0.5) * radius;
+        var y = Math.sin(angle + t * 0.5) * radius;
+        var z = Math.sin(pr * Math.PI * 2) * radius * 0.3;
         p.mesh.position.set(x, y, z);
-        if (pr > 0.85) {
-          p.mesh.material = matMerged;
+        var sc = 0.5 + (1 - pr) * 0.8;
+        p.mesh.scale.setScalar(sc);
+        if (pr > 0.8) {
+          p.mesh.material = matCore;
         } else {
-          p.mesh.material = p.stream === 0 ? matA : matB;
+          p.mesh.material = p.side === 0 ? matA : matB;
         }
       });
-      mergePoint.scale.setScalar(1 + Math.sin(t * 2) * 0.15);
-      group.rotation.y = Math.sin(t * 0.2) * 0.25;
+
+      // Pulsing core
+      core.scale.setScalar(1 + Math.sin(t * 2.5) * 0.2);
+
+      // Expanding pulse rings
+      pulseRings.forEach(function(pr) {
+        var cycle = ((t * 0.6 + pr.phase) % 2.0) / 2.0;
+        var sc = cycle * 1.5;
+        pr.mesh.scale.setScalar(sc);
+        pr.mesh.material.opacity = 0.5 * (1 - cycle);
+      });
+
+      // Update cross-attention arcs
+      for (var ai = 0; ai < arcs.length; ai++) {
+        var sA = streams[ai * 3];
+        var sB = streams[streamCount / 2 + ai * 3];
+        if (sA && sB) {
+          var arr = arcs[ai].line.geometry.attributes.position.array;
+          for (var si = 0; si < 12; si++) {
+            var blend = si / 11;
+            arr[si * 3] = sA.mesh.position.x * (1 - blend) + sB.mesh.position.x * blend;
+            arr[si * 3 + 1] = sA.mesh.position.y * (1 - blend) + sB.mesh.position.y * blend;
+            arr[si * 3 + 2] = sA.mesh.position.z * (1 - blend) + sB.mesh.position.z * blend + Math.sin(blend * Math.PI) * 0.2;
+          }
+          arcs[ai].line.geometry.attributes.position.needsUpdate = true;
+        }
+      }
+
+      group.rotation.z = t * 0.08;
       s.renderer.render(s.scene, s.camera);
     }
     animate();
