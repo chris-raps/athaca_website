@@ -592,10 +592,10 @@ body {
 }
 
 .track-canvas {
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   border-radius: 8px;
   background: transparent !important;
 }
@@ -637,10 +637,10 @@ body {
 }
 
 .engage-canvas {
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   background: transparent !important;
 }
 
@@ -694,10 +694,10 @@ body {
 }
 
 .why-canvas {
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   background: transparent !important;
 }
 
