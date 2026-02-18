@@ -592,10 +592,11 @@ body {
 }
 
 .track-canvas {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   display: block;
-  margin-bottom: 12px;
+  margin-left: -10px;
+  margin-bottom: 16px;
   border-radius: 8px;
   background: transparent !important;
 }
@@ -637,10 +638,11 @@ body {
 }
 
 .engage-canvas {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   display: block;
-  margin-bottom: 12px;
+  margin-left: -10px;
+  margin-bottom: 16px;
   background: transparent !important;
 }
 
@@ -694,10 +696,11 @@ body {
 }
 
 .why-canvas {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   display: block;
-  margin-bottom: 12px;
+  margin-left: -10px;
+  margin-bottom: 16px;
   background: transparent !important;
 }
 
