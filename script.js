@@ -704,17 +704,17 @@
   var backboneMat = new THREE.MeshPhysicalMaterial({
     color: 0xccccdd, metalness: 0.6, roughness: 0.08,
     reflectivity: 0.9, clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 2.5,
-    transparent: true, opacity: 0.85,
+    transparent: true, opacity: 0.95,
   });
   var basePairMat = new THREE.MeshPhysicalMaterial({
     color: 0xb0b8d0, metalness: 0.5, roughness: 0.12,
     reflectivity: 0.8, clearcoat: 0.8, clearcoatRoughness: 0.05, envMapIntensity: 2.0,
-    transparent: true, opacity: 0.7,
+    transparent: true, opacity: 0.9,
   });
   var nodeMat = new THREE.MeshPhysicalMaterial({
     color: 0xdddde8, metalness: 0.35, roughness: 0.06,
     reflectivity: 0.7, clearcoat: 1.0, clearcoatRoughness: 0.02, envMapIntensity: 1.5,
-    transparent: true, opacity: 0.92,
+    transparent: true, opacity: 0.97,
   });
 
   var sphereGeo = new THREE.SphereGeometry(0.28, 32, 32);
