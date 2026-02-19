@@ -668,7 +668,7 @@
 
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-  camera.position.set(0, 0, 7);
+  camera.position.set(1.5, 0, 7);
 
   // Chrome lighting — high contrast with warm/cool mix
   [[0xffffff, 4.0, 5, 5, 5], [0xccddff, 3.0, -5, 3, 3], [0xffeedd, 2.5, 3, -4, -5],
