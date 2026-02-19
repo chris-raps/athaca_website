@@ -712,13 +712,13 @@
     transparent: true, opacity: 0.7,
   });
   var nodeMat = new THREE.MeshPhysicalMaterial({
-    color: 0xdddde8, metalness: 0.65, roughness: 0.03,
-    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.01, envMapIntensity: 3.0,
-    transparent: true, opacity: 0.9,
+    color: 0xdddde8, metalness: 0.35, roughness: 0.06,
+    reflectivity: 0.7, clearcoat: 1.0, clearcoatRoughness: 0.02, envMapIntensity: 1.5,
+    transparent: true, opacity: 0.92,
   });
 
-  var sphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
-  var smallSphereGeo = new THREE.SphereGeometry(0.18, 12, 12);
+  var sphereGeo = new THREE.SphereGeometry(0.28, 32, 32);
+  var smallSphereGeo = new THREE.SphereGeometry(0.18, 24, 24);
 
   // Tilt group for 30-degree side lean
   var tiltGroup = new THREE.Group();
