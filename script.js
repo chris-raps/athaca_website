@@ -700,18 +700,21 @@
   var envSphere = new THREE.Mesh(envGeo, envMat);
   scene.add(envSphere);
 
-  // Chrome / liquid metal materials
+  // Translucent chrome — picks up gradient colors
   var backboneMat = new THREE.MeshPhysicalMaterial({
-    color: 0xccccdd, metalness: 0.95, roughness: 0.08,
-    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 3.5,
+    color: 0xccccdd, metalness: 0.6, roughness: 0.08,
+    reflectivity: 0.9, clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 2.5,
+    transparent: true, opacity: 0.85,
   });
   var basePairMat = new THREE.MeshPhysicalMaterial({
-    color: 0xb0b8d0, metalness: 0.9, roughness: 0.12,
-    reflectivity: 1.0, clearcoat: 0.9, clearcoatRoughness: 0.05, envMapIntensity: 3.0,
+    color: 0xb0b8d0, metalness: 0.5, roughness: 0.12,
+    reflectivity: 0.8, clearcoat: 0.8, clearcoatRoughness: 0.05, envMapIntensity: 2.0,
+    transparent: true, opacity: 0.7,
   });
   var nodeMat = new THREE.MeshPhysicalMaterial({
-    color: 0xdddde8, metalness: 1.0, roughness: 0.03,
-    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.01, envMapIntensity: 4.0,
+    color: 0xdddde8, metalness: 0.65, roughness: 0.03,
+    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.01, envMapIntensity: 3.0,
+    transparent: true, opacity: 0.9,
   });
 
   var sphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
@@ -794,16 +797,30 @@
   resize();
   window.addEventListener('resize', resize);
 
-  // Color palette for heatmap wave: white → cyan → blue → purple → white
-  var nodeWhite = new THREE.Color(0xdddde8);
-  var nodeCyan = new THREE.Color(0x88ddff);
-  var nodeBlue = new THREE.Color(0x5577ff);
-  var nodePurple = new THREE.Color(0x9966ee);
-  function heatColor(v) {
-    if (v < 0.25) return nodeWhite.clone().lerp(nodeCyan, v / 0.25);
-    if (v < 0.5) return nodeCyan.clone().lerp(nodeBlue, (v - 0.25) / 0.25);
-    if (v < 0.75) return nodeBlue.clone().lerp(nodePurple, (v - 0.5) / 0.25);
-    return nodePurple.clone().lerp(nodeWhite, (v - 0.75) / 0.25);
+  // Gradient stops matching the hero background (top→bottom = 0→1)
+  var gradStops = [
+    { pos: 0.00, color: new THREE.Color(0x1a1a2e) },
+    { pos: 0.22, color: new THREE.Color(0x1a2240) },
+    { pos: 0.30, color: new THREE.Color(0x1c2d50) },
+    { pos: 0.38, color: new THREE.Color(0x254068) },
+    { pos: 0.46, color: new THREE.Color(0x3a6590) },
+    { pos: 0.52, color: new THREE.Color(0x5a80aa) },
+    { pos: 0.58, color: new THREE.Color(0x7a6daa) },
+    { pos: 0.64, color: new THREE.Color(0x9b7abf) },
+    { pos: 0.70, color: new THREE.Color(0xa583c8) },
+    { pos: 0.78, color: new THREE.Color(0xb99bd6) },
+    { pos: 0.90, color: new THREE.Color(0xdcc8eb) },
+    { pos: 1.00, color: new THREE.Color(0xffffff) },
+  ];
+  function gradientColor(v) {
+    v = Math.max(0, Math.min(1, v));
+    for (var gi = 0; gi < gradStops.length - 1; gi++) {
+      if (v <= gradStops[gi + 1].pos) {
+        var local = (v - gradStops[gi].pos) / (gradStops[gi + 1].pos - gradStops[gi].pos);
+        return gradStops[gi].color.clone().lerp(gradStops[gi + 1].color, local);
+      }
+    }
+    return gradStops[gradStops.length - 1].color.clone();
   }
 
   var clock = new THREE.Clock();
@@ -811,11 +828,12 @@
     requestAnimationFrame(animate);
     var t = clock.getElapsedTime();
     dnaGroup.rotation.y = t * 0.3;
-    // Color-shift nodes — wave scans along helix
+    // Tint nodes to match the hero gradient at their vertical position
     for (var ci = 0; ci < colorNodes.length; ci++) {
       var cn = colorNodes[ci];
-      var wave = (cn.t + cn.offset + t * 0.15) % 1.0;
-      cn.mat.color.copy(heatColor(wave));
+      // cn.t goes 0→1 from bottom to top of helix; invert so top=dark, bottom=light
+      var gradPos = 1.0 - cn.t;
+      cn.mat.color.copy(gradientColor(gradPos));
     }
     // Rotate env sphere for shifting chrome reflections
     envSphere.rotation.y = t * 0.15;
