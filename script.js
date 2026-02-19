@@ -664,20 +664,20 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3;
+  renderer.toneMappingExposure = 1.6;
 
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
   camera.position.set(0, 0, 7);
 
-  // White + strong blue accent lighting
-  [[0xffffff, 3.5, 5, 5, 5], [0x8899ff, 3.0, -5, 3, 3], [0xffffff, 2.0, 3, -4, -5],
-   [0x7788ee, 2.5, -2, 7, -2], [0xffffff, 2.0, 0, -3, -7], [0x99aaff, 2.0, -4, -2, 4]].forEach(function(cfg) {
+  // Chrome lighting — high contrast with warm/cool mix
+  [[0xffffff, 4.0, 5, 5, 5], [0xccddff, 3.0, -5, 3, 3], [0xffeedd, 2.5, 3, -4, -5],
+   [0xaabbff, 2.0, -2, 7, -2], [0xffffff, 2.0, 0, -3, -7], [0xffccaa, 1.5, -4, -2, 4]].forEach(function(cfg) {
     var l = new THREE.DirectionalLight(cfg[0], cfg[1]);
     l.position.set(cfg[2], cfg[3], cfg[4]);
     scene.add(l);
   });
-  scene.add(new THREE.AmbientLight(0xaabbee, 0.6));
+  scene.add(new THREE.AmbientLight(0x8899cc, 0.4));
 
   // Environment sphere — high-contrast for chrome reflections
   var envGeo = new THREE.SphereGeometry(30, 64, 64);
@@ -689,29 +689,29 @@
     var ez = envGeo.attributes.position.getZ(ei);
     var et = (ey + 30) / 60;
     var ea = Math.atan2(ez, ex);
-    // Strong blue env — drives blue into reflections
+    // Bright bands alternating with dark for chrome contrast
     var band = Math.sin(et * Math.PI * 3 + ea * 2) * 0.5 + 0.5;
     var hotspot = Math.pow(Math.max(0, Math.cos(ea - 1.0) * Math.cos((et - 0.6) * Math.PI)), 4);
-    envColors[ei * 3]     = 0.03 + band * 0.15 + hotspot * 0.7;
-    envColors[ei * 3 + 1] = 0.05 + band * 0.2 + hotspot * 0.75;
-    envColors[ei * 3 + 2] = 0.25 + band * 0.6 + hotspot * 1.0;
+    envColors[ei * 3]     = 0.03 + band * 0.35 + hotspot * 0.9;
+    envColors[ei * 3 + 1] = 0.03 + band * 0.3 + hotspot * 0.85;
+    envColors[ei * 3 + 2] = 0.08 + band * 0.5 + hotspot * 0.95;
   }
   envGeo.setAttribute('color', new THREE.BufferAttribute(envColors, 3));
   var envSphere = new THREE.Mesh(envGeo, envMat);
   scene.add(envSphere);
 
-  // Soft white chrome — blue from reflections
+  // Chrome / liquid metal materials
   var backboneMat = new THREE.MeshPhysicalMaterial({
-    color: 0xe8e8f0, metalness: 0.85, roughness: 0.1,
-    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 3.0,
+    color: 0xccccdd, metalness: 0.95, roughness: 0.08,
+    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 3.5,
   });
   var basePairMat = new THREE.MeshPhysicalMaterial({
-    color: 0xe0e0ec, metalness: 0.8, roughness: 0.14,
-    reflectivity: 1.0, clearcoat: 0.9, clearcoatRoughness: 0.05, envMapIntensity: 2.5,
+    color: 0xb0b8d0, metalness: 0.9, roughness: 0.12,
+    reflectivity: 1.0, clearcoat: 0.9, clearcoatRoughness: 0.05, envMapIntensity: 3.0,
   });
   var nodeMat = new THREE.MeshPhysicalMaterial({
-    color: 0xededf4, metalness: 0.9, roughness: 0.05,
-    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.01, envMapIntensity: 3.2,
+    color: 0xdddde8, metalness: 1.0, roughness: 0.03,
+    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.01, envMapIntensity: 4.0,
   });
 
   var sphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
@@ -794,12 +794,30 @@
   resize();
   window.addEventListener('resize', resize);
 
+  // Color palette for heatmap wave: white → cyan → blue → purple → white
+  var nodeWhite = new THREE.Color(0xdddde8);
+  var nodeCyan = new THREE.Color(0x88ddff);
+  var nodeBlue = new THREE.Color(0x5577ff);
+  var nodePurple = new THREE.Color(0x9966ee);
+  function heatColor(v) {
+    if (v < 0.25) return nodeWhite.clone().lerp(nodeCyan, v / 0.25);
+    if (v < 0.5) return nodeCyan.clone().lerp(nodeBlue, (v - 0.25) / 0.25);
+    if (v < 0.75) return nodeBlue.clone().lerp(nodePurple, (v - 0.5) / 0.25);
+    return nodePurple.clone().lerp(nodeWhite, (v - 0.75) / 0.25);
+  }
+
   var clock = new THREE.Clock();
   function animate() {
     requestAnimationFrame(animate);
     var t = clock.getElapsedTime();
     dnaGroup.rotation.y = t * 0.3;
-    // Rotate env sphere for shifting blue reflections
+    // Color-shift nodes — wave scans along helix
+    for (var ci = 0; ci < colorNodes.length; ci++) {
+      var cn = colorNodes[ci];
+      var wave = (cn.t + cn.offset + t * 0.15) % 1.0;
+      cn.mat.color.copy(heatColor(wave));
+    }
+    // Rotate env sphere for shifting chrome reflections
     envSphere.rotation.y = t * 0.15;
     envSphere.rotation.x = Math.sin(t * 0.1) * 0.2;
     // Re-render env map for live reflections
