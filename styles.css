@@ -56,13 +56,12 @@ body {
   right: 0;
   z-index: 100;
   background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  transition: background 0.4s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  border-bottom: none;
+  transition: background 0.4s ease, box-shadow 0.3s ease;
 }
 
 .nav.scrolled {
   background: #FFFFFF;
-  border-bottom-color: var(--border);
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
 }
 
