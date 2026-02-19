@@ -709,7 +709,7 @@
   var basePairMat = new THREE.MeshPhysicalMaterial({
     color: 0xb0b8d0, metalness: 0.5, roughness: 0.12,
     reflectivity: 0.8, clearcoat: 0.8, clearcoatRoughness: 0.05, envMapIntensity: 2.0,
-    transparent: true, opacity: 0.9,
+    transparent: true, opacity: 0.98,
   });
   var nodeMat = new THREE.MeshPhysicalMaterial({
     color: 0xdddde8, metalness: 0.35, roughness: 0.06,
