@@ -316,22 +316,19 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 14px 32px;
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #FFFFFF;
+  background: transparent;
+  color: #000000;
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid #000000;
   border-radius: 6px;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .btn-secondary:hover {
-  border-color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .hero-visual {
