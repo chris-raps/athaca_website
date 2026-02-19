@@ -664,15 +664,15 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.6;
+  renderer.toneMappingExposure = 1.3;
 
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
   camera.position.set(0, 0, 7);
 
-  // White chrome lighting — mostly white, hint of cool blue
-  [[0xffffff, 4.5, 5, 5, 5], [0xf0f4ff, 3.0, -5, 3, 3], [0xffffff, 2.5, 3, -4, -5],
-   [0xe8eeff, 2.0, -2, 7, -2], [0xffffff, 2.5, 0, -3, -7], [0xffffff, 1.5, -4, -2, 4]].forEach(function(cfg) {
+  // Softer white lighting with blue accents
+  [[0xffffff, 3.5, 5, 5, 5], [0xdde4ff, 2.5, -5, 3, 3], [0xffffff, 2.0, 3, -4, -5],
+   [0xd0d8ff, 1.8, -2, 7, -2], [0xffffff, 2.0, 0, -3, -7], [0xe8eeff, 1.2, -4, -2, 4]].forEach(function(cfg) {
     var l = new THREE.DirectionalLight(cfg[0], cfg[1]);
     l.position.set(cfg[2], cfg[3], cfg[4]);
     scene.add(l);
@@ -700,18 +700,18 @@
   var envSphere = new THREE.Mesh(envGeo, envMat);
   scene.add(envSphere);
 
-  // Pure white chrome — blue comes only from reflections
+  // Soft white chrome — blue from reflections
   var backboneMat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 0.95, roughness: 0.08,
-    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 3.5,
+    color: 0xe8e8f0, metalness: 0.85, roughness: 0.1,
+    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 3.0,
   });
   var basePairMat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 0.9, roughness: 0.12,
-    reflectivity: 1.0, clearcoat: 0.9, clearcoatRoughness: 0.05, envMapIntensity: 3.0,
+    color: 0xe0e0ec, metalness: 0.8, roughness: 0.14,
+    reflectivity: 1.0, clearcoat: 0.9, clearcoatRoughness: 0.05, envMapIntensity: 2.5,
   });
   var nodeMat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 1.0, roughness: 0.03,
-    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.01, envMapIntensity: 4.0,
+    color: 0xededf4, metalness: 0.9, roughness: 0.05,
+    reflectivity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.01, envMapIntensity: 3.2,
   });
 
   var sphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
