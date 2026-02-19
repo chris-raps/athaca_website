@@ -670,14 +670,14 @@
   var camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
   camera.position.set(0, 0, 7);
 
-  // Softer white lighting with blue accents
-  [[0xffffff, 3.5, 5, 5, 5], [0xdde4ff, 2.5, -5, 3, 3], [0xffffff, 2.0, 3, -4, -5],
-   [0xd0d8ff, 1.8, -2, 7, -2], [0xffffff, 2.0, 0, -3, -7], [0xe8eeff, 1.2, -4, -2, 4]].forEach(function(cfg) {
+  // White + strong blue accent lighting
+  [[0xffffff, 3.5, 5, 5, 5], [0x8899ff, 3.0, -5, 3, 3], [0xffffff, 2.0, 3, -4, -5],
+   [0x7788ee, 2.5, -2, 7, -2], [0xffffff, 2.0, 0, -3, -7], [0x99aaff, 2.0, -4, -2, 4]].forEach(function(cfg) {
     var l = new THREE.DirectionalLight(cfg[0], cfg[1]);
     l.position.set(cfg[2], cfg[3], cfg[4]);
     scene.add(l);
   });
-  scene.add(new THREE.AmbientLight(0xdde0f0, 0.5));
+  scene.add(new THREE.AmbientLight(0xaabbee, 0.6));
 
   // Environment sphere — high-contrast for chrome reflections
   var envGeo = new THREE.SphereGeometry(30, 64, 64);
@@ -689,12 +689,12 @@
     var ez = envGeo.attributes.position.getZ(ei);
     var et = (ey + 30) / 60;
     var ea = Math.atan2(ez, ex);
-    // White with blue bands — blue shows up in reflections
+    // Strong blue env — drives blue into reflections
     var band = Math.sin(et * Math.PI * 3 + ea * 2) * 0.5 + 0.5;
     var hotspot = Math.pow(Math.max(0, Math.cos(ea - 1.0) * Math.cos((et - 0.6) * Math.PI)), 4);
-    envColors[ei * 3]     = 0.05 + band * 0.25 + hotspot * 0.9;
-    envColors[ei * 3 + 1] = 0.07 + band * 0.3 + hotspot * 0.9;
-    envColors[ei * 3 + 2] = 0.2 + band * 0.55 + hotspot * 1.0;
+    envColors[ei * 3]     = 0.03 + band * 0.15 + hotspot * 0.7;
+    envColors[ei * 3 + 1] = 0.05 + band * 0.2 + hotspot * 0.75;
+    envColors[ei * 3 + 2] = 0.25 + band * 0.6 + hotspot * 1.0;
   }
   envGeo.setAttribute('color', new THREE.BufferAttribute(envColors, 3));
   var envSphere = new THREE.Mesh(envGeo, envMat);
